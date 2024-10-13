@@ -1,0 +1,175 @@
+import net.neoforged.moddevgradle.internal.RunGameTask
+
+plugins {
+	id 'java-library'
+	id 'eclipse'
+	id 'idea'
+	id 'maven-publish'
+	// Version List: https://projects.neoforged.net/neoforged/ModDevGradle
+	id 'net.neoforged.moddev' version "${mdg_version}"
+	id "com.dorongold.task-tree" version "4.0.0"
+}
+
+def secrets = new Properties()
+def secretsFile = file('secrets.properties')
+if (secretsFile.exists()) {
+	secretsFile.withInputStream {
+		stream -> secrets.load(stream)
+	}
+
+	fileTree("secrets").matching {
+		include "**/*.properties"
+	}.each {
+		File file ->
+			file.withInputStream {
+				stream -> secrets.load(stream)
+			}
+	}
+}
+
+idea {
+	module {
+		downloadJavadoc = true
+		downloadSources = true
+	}
+}
+
+version = (hasProperty("CIRevision") ? CIRevision : project.mod_version)
+group = group_name
+
+java {
+	toolchain {
+		languageVersion.set(JavaLanguageVersion.of(21))
+	}
+}
+
+compileJava.options.compilerArgs << "-Xlint:all,-classfile,-processing,-deprecation,-this-escape" << "-Werror"
+
+base {
+	archivesName = "${project.mod_id}-${project.minecraft_version}"
+}
+
+neoForge {
+	version = project.neo_version
+
+	validateAccessTransformers = true
+
+	mods {
+		beanification {
+			sourceSet this.sourceSets.main
+		}
+	}
+
+	unitTest {
+		enable()
+		testedMod = mods.beanification
+	}
+
+	runs {
+		configureEach {
+			gameDirectory = project.file('run')
+			systemProperty 'forge.logging.console.level', 'debug'
+			logLevel = org.slf4j.event.Level.DEBUG
+		}
+
+		client {
+			client()
+			systemProperty 'forge.enabledGameTestNamespaces', mod_id
+			programArguments.addAll '--username', secrets.getProperty("username") ?: 'Dev', secrets.getProperty("uuid") ? '--uuid' : '', secrets.getProperty("uuid") ?: ''
+		}
+
+		server {
+			server()
+			systemProperty 'forge.enabledGameTestNamespaces', mod_id
+			programArgument '--nogui'
+		}
+
+		data {
+			data()
+			gameDirectory = project.file('run-data')
+			programArguments.addAll '--mod', mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+		}
+	}
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+	mavenLocal()
+	maven {
+		name 'Jared\'s Maven' // JEI
+		url 'https://maven.blamejared.com/'
+	}
+}
+
+dependencies {
+	// Purely so we can see MDG sources for debugging purposes
+	compileOnly "net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:${project.mdg_version}"
+
+	implementation "mezz.jei:jei-${project.base_minecraft_version}-neoforge:${project.jei_version}"
+
+	testImplementation group: 'net.neoforged', name: 'testframework', version: project.neo_version
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.10.3'
+	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.10.3'
+	testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '5.12.0'
+}
+
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "failed"
+
+		showExceptions true
+		exceptionFormat "full"
+		showCauses true
+		showStackTraces true
+
+		showStandardStreams = false
+	}
+}
+
+jar {
+	manifest {
+		attributes([
+			'Specification-Title'     : mod_id,
+			'Specification-Vendor'    : "Tamaized",
+			'Specification-Version'   : "1",
+			'Implementation-Title'    : this.project.name,
+			'Implementation-Version'  : this.project.jar.archiveVersion,
+			'Implementation-Vendor'   : "Tamaized",
+			'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+		])
+	}
+}
+
+publishing {
+	publications {
+		create('mavenJava', MavenPublication) {
+			afterEvaluate {
+				artifact this.project.jar
+				artifact this.project.sourceJar
+			}
+			groupId 'tamaized'
+			artifactId this.project.mod_id
+		}
+	}
+	repositories {
+		maven {
+			url "https://maven.tamaized.com/releases"
+			credentials {
+				username secrets.getProperty("ARTIFACTORY_USER") ?: System.getenv('ARTIFACTORY_USER')
+				password secrets.getProperty("ARTIFACTORY_PASS") ?: System.getenv('ARTIFACTORY_PASS')
+			}
+		}
+	}
+}
+
+tasks.register('sourceJar', Jar) {
+	dependsOn 'classes'
+	from sourceSets.main.allSource
+	archiveClassifier = 'sources'
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+}
