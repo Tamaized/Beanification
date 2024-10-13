@@ -54,17 +54,6 @@ neoForge {
 
 	validateAccessTransformers = true
 
-	mods {
-		beanification {
-			sourceSet this.sourceSets.main
-		}
-	}
-
-	unitTest {
-		enable()
-		testedMod = mods.beanification
-	}
-
 	runs {
 		configureEach {
 			gameDirectory = project.file('run')
