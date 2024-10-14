@@ -34,7 +34,7 @@ idea {
 	}
 }
 
-version = (hasProperty("CIRevision") ? CIRevision : project.mod_version)
+version = "${project.minecraft_version}-${project.mod_major_version}." + (hasProperty("CIVersion") ? CIVersion : mod_version)
 group = group_name
 
 java {
@@ -159,12 +159,17 @@ jar {
 	}
 }
 
+def mavenUser = hasProperty("CIMUser") ? CIMUser : secrets.getProperty("maven_username")
+def mavenToken = hasProperty("CIMToken") ? CIMToken : secrets.getProperty("maven_password")
+
 publishing {
 	publications {
 		create('mavenJava', MavenPublication) {
 			afterEvaluate {
 				artifact this.project.jar
 				artifact this.project.sourceJar
+				artifact this.project.testJar
+				artifact this.project.testSourceJar
 			}
 			groupId 'tamaized'
 			artifactId this.project.mod_id
@@ -174,8 +179,8 @@ publishing {
 		maven {
 			url "https://maven.tamaized.com/releases"
 			credentials {
-				username secrets.getProperty("ARTIFACTORY_USER") ?: System.getenv('ARTIFACTORY_USER')
-				password secrets.getProperty("ARTIFACTORY_PASS") ?: System.getenv('ARTIFACTORY_PASS')
+				username mavenUser
+				password mavenToken
 			}
 		}
 	}
@@ -185,6 +190,18 @@ tasks.register('sourceJar', Jar) {
 	dependsOn 'classes'
 	from sourceSets.main.allSource
 	archiveClassifier = 'sources'
+}
+
+tasks.register('testJar', Jar) {
+	dependsOn 'classes'
+	from sourceSets.test.output
+	archiveClassifier = 'tests'
+}
+
+tasks.register('testSourceJar', Jar) {
+	dependsOn 'classes'
+	from sourceSets.test.allSource
+	archiveClassifier = 'test-sources'
 }
 
 tasks.withType(JavaCompile).configureEach {
