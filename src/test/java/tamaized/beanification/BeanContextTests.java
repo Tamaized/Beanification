@@ -1,42 +1,42 @@
 package tamaized.beanification;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.junit.TestConstants;
 
 import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.spy;
 
+@ExtendWith({MockitoRunner.class})
 public class BeanContextTests {
 
-	@BeforeEach
-	public void beforeEach() {
-		BeanContext.INSTANCE = spy(BeanContext.class);
-	}
+	@InjectMocks
+	private BeanContext instance;
 
 	@Test
 	public void contextLoads() {
-		assertDoesNotThrow(() -> BeanContext.init(TestConstants.MODID));
+		assertDoesNotThrow(() -> instance.initInternal(TestConstants.MODID, registrar -> {}, false));
 	}
 
 	@Test
 	public void unknownModContainer() {
-		assertThrows(NoSuchElementException.class, () -> BeanContext.init("missingno"));
+		assertThrows(NoSuchElementException.class, () -> instance.initInternal("missingno", registrar -> {}, false));
 	}
 
 	@Test
 	public void directBeanRegistration() {
 		TestBean bean = new TestBean();
 		TestBean namedBean = new TestBean();
-		BeanContext.init(TestConstants.MODID, beanContextRegistrar -> {
-			beanContextRegistrar.register(TestBean.class, bean);
-			beanContextRegistrar.register(TestBean.class, "named", namedBean);
-		});
+		instance.initInternal(TestConstants.MODID, registrar -> {
+			registrar.register(TestBean.class, bean);
+			registrar.register(TestBean.class, "named", namedBean);
+		}, false);
 
-		assertSame(bean, BeanContext.inject(TestBean.class));
-		assertSame(namedBean, BeanContext.inject(TestBean.class, "named"));
+		assertSame(bean, instance.injectInternal(TestBean.class, null));
+		assertSame(namedBean, instance.injectInternal(TestBean.class, "named"));
 	}
 
 	private static class TestBean {

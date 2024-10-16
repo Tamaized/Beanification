@@ -5,8 +5,10 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.objectweb.asm.Type;
 import tamaized.beanification.BeanContext;
-import tamaized.beanification.DistAnnotationRetriever;
+import tamaized.beanification.InternalBeanContext;
+import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.PostConstruct;
+import tamaized.beanification.internal.InternalReflectionHelper;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;
@@ -19,9 +21,13 @@ import java.util.concurrent.atomic.AtomicReference;
 @BeanProcessor(priority = 1)
 public class PostConstructAnnotationDataPostProcessor implements AnnotationDataPostProcessor {
 
+	private final DistAnnotationRetriever distAnnotationRetriever = InternalBeanContext.inject(DistAnnotationRetriever.class);
+
+	private final InternalReflectionHelper internalReflectionHelper = InternalBeanContext.inject(InternalReflectionHelper.class);
+
 	@Override
 	public void process(BeanContext.BeanContextInternalInjector context, ModContainer modContainer, ModFileScanData scanData, Object bean, AtomicReference<Object> currentInjectionTarget) throws Throwable {
-		for (Iterator<ModFileScanData.AnnotationData> it = DistAnnotationRetriever.retrieve(scanData, PostConstruct.class, ElementType.METHOD).filter(a -> a.clazz().equals(Type.getType(bean.getClass()))).iterator(); it.hasNext(); ) {
+		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, PostConstruct.class, ElementType.METHOD).filter(a -> a.clazz().equals(internalReflectionHelper.getType(bean.getClass()))).iterator(); it.hasNext(); ) {
 			String name = it.next().memberName().split("\\(")[0];
 			List<Method> methods = new ArrayList<>();
 			try {

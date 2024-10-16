@@ -1,4 +1,4 @@
-import net.neoforged.moddevgradle.internal.RunGameTask
+import org.jetbrains.gradle.ext.JUnit
 
 plugins {
 	id 'java-library'
@@ -31,6 +31,9 @@ idea {
 	module {
 		downloadJavadoc = true
 		downloadSources = true
+
+		outputDir = file("out/combined/classes")
+		testOutputDir = file("out/combined/classes")
 	}
 }
 
@@ -79,6 +82,20 @@ neoForge {
 	unitTest {
 		enable()
 		testedMod = mods.beanification
+		project.afterEvaluate {
+			idea {
+				project {
+					settings {
+						runConfigurations {
+							defaults(JUnit) {
+								vmParameters += " -Dforge.logging.console.level=debug"
+								vmParameters += " -Dforge.logging.marker.scan=ACCEPT"
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	runs {

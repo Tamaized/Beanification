@@ -5,6 +5,10 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.modscan.ModAnnotation;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import tamaized.beanification.internal.DistAnnotationRetriever;
+import tamaized.beanification.junit.MockitoRunner;
 
 import java.lang.annotation.ElementType;
 import java.util.*;
@@ -14,7 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith({MockitoRunner.class})
 public class DistAnnotationRetrieverTests {
+
+	@InjectMocks
+	private DistAnnotationRetriever instance;
 
 	@SafeVarargs
 	private <T> ArrayList<T> list(T... elements) {
@@ -34,7 +42,7 @@ public class DistAnnotationRetrieverTests {
 			new ModFileScanData.AnnotationData(null, null, null, "g", Map.of())
 		));
 
-		List<ModFileScanData.AnnotationData> result = DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD).toList();
+		List<ModFileScanData.AnnotationData> result = instance.retrieve(scanData, Autowired.class, ElementType.FIELD).toList();
 
 		assertEquals(5, result.size());
 		assertEquals("a", result.getFirst().memberName());

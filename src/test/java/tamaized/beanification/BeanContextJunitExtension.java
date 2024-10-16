@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.mockito.MockedStatic;
 import tamaized.beanification.junit.MockBean;
+import tamaized.beanification.junit.TestConstants;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -30,7 +31,7 @@ public class BeanContextJunitExtension implements BeforeAllCallback, AfterAllCal
 	@Nullable
 	private BeanContext beanContextInstance;
 
-	private Map<BeanContext.BeanDefinition<?>, Object> mockedBeans = new HashMap<>();
+	private final Map<BeanContext.BeanDefinition<?>, Object> mockedBeans = new HashMap<>();
 
 	private <T> T mockBean(Class<T> type) {
 		return mockBean(type, null);
@@ -79,8 +80,8 @@ public class BeanContextJunitExtension implements BeforeAllCallback, AfterAllCal
 		Field f = BeanContext.class.getDeclaredField("INSTANCE");
 		f.trySetAccessible();
 		f.set(null, beanContextInstance);
-		Method init = BeanContext.class.getDeclaredMethod("initInternal", Consumer.class, boolean.class);
+		Method init = BeanContext.class.getDeclaredMethod("initInternal", String.class, Consumer.class, boolean.class);
 		init.trySetAccessible();
-		init.invoke(beanContextInstance, null, true);
+		init.invoke(beanContextInstance, TestConstants.MODID, null, true);
 	}
 }

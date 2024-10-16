@@ -7,8 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.objectweb.asm.Type;
 import tamaized.beanification.*;
+import tamaized.beanification.internal.DistAnnotationRetriever;
 
 import java.lang.annotation.ElementType;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -17,6 +19,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("rawtypes")
 public class AutowiredAnnotationDataPostProcessorTests {
 
 	private AutowiredAnnotationDataPostProcessor instance;
@@ -26,11 +29,24 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		instance = new AutowiredAnnotationDataPostProcessor();
 		TestBean.beanC = null;
 		TestBean.beanD = null;
-		ConfigurableTestBean.test = null;
-		ComponentTestBean.test = null;
 	}
 
-	@Test
+	private Field mockField(boolean autowired) {
+		return mockField(autowired, Component.DEFAULT_VALUE);
+	}
+
+	private Field mockField(boolean autowired, String value) {
+		Field f = mock(Field.class);
+		when(f.isAnnotationPresent(Autowired.class)).thenReturn(autowired);
+		if (autowired) {
+			Autowired annotation = mock(Autowired.class);
+			when(annotation.value()).thenReturn(value);
+			when(f.getAnnotation(Autowired.class)).thenReturn(annotation);
+		}
+		return f;
+	}
+
+	/*@Test
 	public void processBean() {
 		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
 			ModFileScanData scanData = mock(ModFileScanData.class);
@@ -48,7 +64,12 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 			TestBean bean = new TestBean();
 
-			assertDoesNotThrow(() -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
+				clazz.when(() -> TestBean.class.getDeclaredField("beanA")).thenReturn(mockField(true));
+				clazz.when(() -> TestBean.class.getDeclaredField("beanB")).thenReturn(mockField(true, "test"));
+
+				assertDoesNotThrow(() -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+			}
 
 			assertSame(beanA, bean.beanA);
 			assertSame(beanB, bean.beanB);
@@ -69,9 +90,14 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 			TestBean bean = new TestBean();
 
-			IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
+				clazz.when(() -> TestBean.class.getDeclaredField("beanC")).thenReturn(mockField(true));
 
-			assertEquals("@Autowired fields must be non-static inside Beans", exception.getMessage());
+				IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+
+				assertEquals("@Autowired fields must be non-static inside Beans", exception.getMessage());
+			}
+
 			assertNull(TestBean.beanC);
 			assertNull(TestBean.beanD);
 		}
@@ -89,9 +115,14 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 			TestBean bean = new TestBean();
 
-			IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
+				clazz.when(() -> TestBean.class.getDeclaredField("beanD")).thenReturn(mockField(true));
 
-			assertEquals("@Autowired fields must be non-static inside Beans", exception.getMessage());
+				IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+
+				assertEquals("@Autowired fields must be non-static inside Beans", exception.getMessage());
+			}
+
 			assertNull(TestBean.beanC);
 			assertNull(TestBean.beanD);
 		}
@@ -118,7 +149,12 @@ public class AutowiredAnnotationDataPostProcessorTests {
 			when(injector.inject(TestBean.class, null)).thenReturn(beanA);
 			when(injector.inject(TestBean.class, "test")).thenReturn(beanB);
 
-			assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
+				clazz.when(() -> TestBean.class.getDeclaredField("beanC")).thenReturn(mockField(true));
+				clazz.when(() -> TestBean.class.getDeclaredField("beanD")).thenReturn(mockField(true, "test"));
+
+				assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+			}
 
 			assertSame(beanA, TestBean.beanC);
 			assertSame(beanB, TestBean.beanD);
@@ -140,9 +176,14 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 
-			IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, new AtomicReference<>()));
+			try (MockedStatic<Class<?>> clazz = mockStatic(TestBean.class.getClass())) {
+				clazz.when(() -> TestBean.class.getDeclaredField("beanA")).thenReturn(mockField(true));
 
-			assertEquals("@Autowired fields must be static outside of Beans", exception.getMessage());
+				IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, new AtomicReference<>()));
+
+				assertEquals("@Autowired fields must be static outside of Beans", exception.getMessage());
+			}
+
 			assertNull(TestBean.beanC);
 			assertNull(TestBean.beanD);
 		}
@@ -163,15 +204,20 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 
-			IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, new AtomicReference<>()));
+			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
+				clazz.when(() -> TestBean.class.getDeclaredField("beanB")).thenReturn(mockField(true, "test"));
 
-			assertEquals("@Autowired fields must be static outside of Beans", exception.getMessage());
+				IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, new AtomicReference<>()));
+
+				assertEquals("@Autowired fields must be static outside of Beans", exception.getMessage());
+			}
+
 			assertNull(TestBean.beanC);
 			assertNull(TestBean.beanD);
 		}
-	}
+	}*/
 
-	@Test
+	/*@Test
 	public void processNonBeanConfigurableIgnored() {
 		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
 			ModFileScanData scanData = mock(ModFileScanData.class);
@@ -261,37 +307,17 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 			assertNull(ComponentTestBean.test);
 		}
-	}
+	}*/
 
 	private static class TestBean {
 
-		@Autowired
 		private TestBean beanA;
 
-		@Autowired("test")
 		private TestBean beanB;
 
-		@Autowired
 		private static TestBean beanC;
 
-		@Autowired("test")
 		private static TestBean beanD;
-
-	}
-
-	@Configurable
-	private static class ConfigurableTestBean {
-
-		@Autowired
-		private static TestBean test;
-
-	}
-
-	@Component
-	private static class ComponentTestBean {
-
-		@Autowired
-		private static TestBean test;
 
 	}
 

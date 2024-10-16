@@ -17,6 +17,7 @@ import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.processors.AnnotationDataPostProcessor;
 import tamaized.beanification.processors.AnnotationDataProcessor;
 import tamaized.beanification.processors.BeanProcessor;
@@ -32,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-public final class BeanContext {
+public final class BeanContext extends AbstractBeanContext {
 
 	private static final Logger LOGGER = LogManager.getLogger(BeanContext.class);
 
@@ -63,8 +64,11 @@ public final class BeanContext {
 
 	static BeanContext INSTANCE = new BeanContext();
 
-	private final Map<BeanDefinition<?>, Object> BEANS = new HashMap<>();
-	private boolean frozen = false;
+	private final DistAnnotationRetriever distAnnotationRetriever = InternalBeanContext.inject(DistAnnotationRetriever.class);
+
+	private final BeanContextRegistrar beanContextRegistrar = new BeanContextRegistrar();
+	private final BeanContextInternalRegistrar beanContextInternalRegistrar = new BeanContextInternalRegistrar();
+	private final BeanContextInternalInjector beanContextInternalInjector = new BeanContextInternalInjector();
 
 	private BeanContext() {
 
@@ -85,17 +89,17 @@ public final class BeanContext {
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	private void initInternal(final String modid, @Nullable Consumer<BeanContextRegistrar> context, boolean forceInjectRegistries) {
+	void initInternal(final String modid, @Nullable Consumer<BeanContextRegistrar> context, boolean forceInjectRegistries) {
 		final long ms = System.currentTimeMillis();
 		LOGGER.info("Starting Bean Context");
-		if (frozen)
+		if (isFrozen())
 			throw new IllegalStateException("Bean Context already frozen");
-		BEANS.clear();
+		getBeans().clear();
 
 		registerInternal(BeanContext.class, null, this);
 
 		if (context != null)
-			context.accept(BeanContextRegistrar.SINGLETON);
+			context.accept(beanContextRegistrar);
 
 		ModContainer modContainer = ModList.get().getModContainerById(modid).orElseThrow();
 		ModFileScanData scanData = modContainer.getModInfo().getOwningFile().getFile().getScanResult();
@@ -105,7 +109,7 @@ public final class BeanContext {
 			List<AnnotationDataProcessor> annotationDataProcessors = new ArrayList<>();
 			List<AnnotationDataPostProcessor> annotationDataPostProcessors = new ArrayList<>();
 
-			for (Iterator<? extends Class<?>> it = DistAnnotationRetriever.retrieve(scanData, BeanProcessor.class, ElementType.TYPE)
+			for (Iterator<? extends Class<?>> it = distAnnotationRetriever.retrieve(scanData, BeanProcessor.class, ElementType.TYPE)
 				.map(a -> {
 					try {
 						return Class.forName(a.clazz().getClassName());
@@ -127,14 +131,14 @@ public final class BeanContext {
 
 			for (AnnotationDataProcessor annotationDataProcessor : annotationDataProcessors) {
 				LOGGER.debug("Running processor {}", annotationDataProcessor.getClass());
-				annotationDataProcessor.process(BeanContextInternalRegistrar.SINGLETON, modContainer, scanData);
+				annotationDataProcessor.process(beanContextInternalRegistrar, modContainer, scanData);
 			}
 
-			frozen = true;
+			freeze();
 
-			for (Object bean : BEANS.values()) {
+			for (Object bean : getBeans().values()) {
 				for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
-					annotationDataPostProcessor.process(BeanContextInternalInjector.SINGLETON, modContainer, scanData, bean, currentInjection);
+					annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, bean, currentInjection);
 				}
 			}
 
@@ -142,7 +146,7 @@ public final class BeanContext {
 
 			for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
 				LOGGER.debug("Running post processor {}", annotationDataPostProcessor.getClass());
-				annotationDataPostProcessor.process(BeanContextInternalInjector.SINGLETON, modContainer, scanData, currentInjection);
+				annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, currentInjection);
 			}
 
 			currentInjection.set(null);
@@ -173,7 +177,7 @@ public final class BeanContext {
 
 	private void runAnnotationDataPostProcessors(Object o, ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors, AtomicReference<Object> curInj) throws Throwable {
 		for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
-			annotationDataPostProcessor.process(BeanContextInternalInjector.SINGLETON, modContainer, scanData, o, curInj);
+			annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, o, curInj);
 		}
 	}
 
@@ -234,23 +238,10 @@ public final class BeanContext {
 		return c.isAnnotationPresent(a) || (c.getSuperclass() instanceof Class<?> s && classOrSuperHasAnnotation(s, a));
 	}
 
-	public boolean isFrozen() {
-		return frozen;
-	}
-
-	private void registerInternal(Class<?> type, @Nullable String name, Object instance) {
+	@Override
+	protected void registerInternal(Class<?> type, @org.jetbrains.annotations.Nullable String name, Object instance) {
 		LOGGER.debug("Registering Bean {} {}", type, name == null ? "" : ("with name: " + name));
-		if (frozen)
-			throw new IllegalStateException("Bean Context already frozen");
-		BeanDefinition<?> beanDefinition = new BeanDefinition<>(type, name);
-		if (BEANS.containsKey(beanDefinition)) {
-			final StringBuilder error = new StringBuilder("Class: ").append(type);
-			if (name != null) {
-				error.append(", Name: ").append(name);
-			}
-			throw new RuntimeException("Attempted to register a duplicate Bean." + error);
-		}
-		BEANS.put(beanDefinition, instance);
+		super.registerInternal(type, name, instance);
 	}
 
 	public static <T> T inject(Class<T> type) {
@@ -261,28 +252,7 @@ public final class BeanContext {
 		return INSTANCE.injectInternal(type, name);
 	}
 
-	<T> T injectInternal(Class<T> type, @Nullable String name) {
-		if (!frozen)
-			throw new IllegalStateException("Bean Context has not been initialized yet");
-		return type.cast(Objects.requireNonNull(BEANS.get(new BeanDefinition<>(type, name)), "Trying to inject Bean: " + type + (name == null ? "" : " (" + name + ")")));
-	}
-
-	record BeanDefinition<T>(Class<T> type, @Nullable String name) {
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(type, name);
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			return o instanceof BeanDefinition<?> other && type.equals(other.type()) && (name == null || Objects.equals(name, other.name));
-		}
-	}
-
-	public static final class BeanContextRegistrar {
-
-		static final BeanContextRegistrar SINGLETON = new BeanContextRegistrar();
+	public final class BeanContextRegistrar {
 
 		private BeanContextRegistrar() {
 
@@ -293,39 +263,35 @@ public final class BeanContext {
 		}
 
 		public <T> void register(Class<T> type, @Nullable String name, T instance) {
-			INSTANCE.registerInternal(type, name, instance);
+			BeanContext.this.registerInternal(type, name, instance);
 		}
 
 	}
 
-	public static final class BeanContextInternalRegistrar {
-
-		static final BeanContextInternalRegistrar SINGLETON = new BeanContextInternalRegistrar();
+	public final class BeanContextInternalRegistrar {
 
 		private BeanContextInternalRegistrar() {
 
 		}
 
 		public void register(Class<?> type, @Nullable String name, Object instance) {
-			INSTANCE.registerInternal(type, name, instance);
+			BeanContext.this.registerInternal(type, name, instance);
 		}
 
 	}
 
-	public static final class BeanContextInternalInjector {
-
-		static final BeanContextInternalInjector SINGLETON = new BeanContextInternalInjector();
+	public final class BeanContextInternalInjector {
 
 		private BeanContextInternalInjector() {
 
 		}
 
 		public <T> T inject(Class<T> type, @Nullable String name) {
-			return INSTANCE.injectInternal(type, name);
+			return BeanContext.this.injectInternal(type, name);
 		}
 
 		public boolean contains(Class<?> type, @Nullable String name) {
-			return INSTANCE.BEANS.containsKey(new BeanDefinition<>(type, name));
+			return BeanContext.this.getBeans().containsKey(new BeanDefinition<>(type, name));
 		}
 
 	}
