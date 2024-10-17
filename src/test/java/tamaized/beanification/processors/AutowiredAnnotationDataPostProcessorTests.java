@@ -4,14 +4,21 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.objectweb.asm.Type;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
+import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.junit.MockitoFixer;
+import tamaized.beanification.junit.MockitoRunner;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -19,17 +26,17 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("rawtypes")
+@ExtendWith({MockitoFixer.class, MockitoRunner.class})
 public class AutowiredAnnotationDataPostProcessorTests {
 
-	private AutowiredAnnotationDataPostProcessor instance;
+	@Mock
+	private DistAnnotationRetriever distAnnotationRetriever;
 
-	@BeforeEach
-	public void beforeEach() {
-		instance = new AutowiredAnnotationDataPostProcessor();
-		TestBean.beanC = null;
-		TestBean.beanD = null;
-	}
+	@Mock
+	private InternalReflectionHelper internalReflectionHelper;
+
+	@InjectMocks
+	private AutowiredAnnotationDataPostProcessor instance;
 
 	private Field mockField(boolean autowired) {
 		return mockField(autowired, Component.DEFAULT_VALUE);
@@ -46,39 +53,59 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		return f;
 	}
 
-	/*@Test
-	public void processBean() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "beanA", new HashMap<>()),
-				new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "beanB", Map.of("value", "test"))
-			));
+	@Test
+	public void processBean() throws IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
+		));
 
-			TestBean beanA = new TestBean();
-			TestBean beanB = new TestBean();
+		TestBean bean = new TestBean();
+		TestBean dependencyBean = new TestBean();
 
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
-			when(injector.inject(TestBean.class, null)).thenReturn(beanA);
-			when(injector.inject(TestBean.class, "test")).thenReturn(beanB);
+		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), bean.getClass())).thenReturn(true);
 
-			TestBean bean = new TestBean();
+		Field target = mockField(true);
+		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(bean.getClass(), "target", Component.DEFAULT_VALUE)).thenReturn(List.of(target));
 
-			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
-				clazz.when(() -> TestBean.class.getDeclaredField("beanA")).thenReturn(mockField(true));
-				clazz.when(() -> TestBean.class.getDeclaredField("beanB")).thenReturn(mockField(true, "test"));
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
 
-				assertDoesNotThrow(() -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
-			}
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		doReturn(dependencyBean).when(injector).inject(isNull(), isNull());
 
-			assertSame(beanA, bean.beanA);
-			assertSame(beanB, bean.beanB);
-			assertNull(TestBean.beanC);
-			assertNull(TestBean.beanD);
-		}
+		assertDoesNotThrow(() -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, times(1)).set(bean, dependencyBean);
 	}
 
 	@Test
+	public void processBeanNamed() throws IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", Map.of("value", "test"))
+		));
+
+		TestBean bean = new TestBean();
+		TestBean dependencyBean = new TestBean();
+
+		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), bean.getClass())).thenReturn(true);
+
+		Field target = mockField(true, "test");
+		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(bean.getClass(), "target", "test")).thenReturn(List.of(target));
+
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
+
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		doReturn(dependencyBean).when(injector).inject(isNull(), eq("test"));
+
+		assertDoesNotThrow(() -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, times(1)).set(bean, dependencyBean);
+	}
+
+	/*@Test
 	public void processBeanStaticMember() {
 		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
 			ModFileScanData scanData = mock(ModFileScanData.class);
@@ -308,17 +335,5 @@ public class AutowiredAnnotationDataPostProcessorTests {
 			assertNull(ComponentTestBean.test);
 		}
 	}*/
-
-	private static class TestBean {
-
-		private TestBean beanA;
-
-		private TestBean beanB;
-
-		private static TestBean beanC;
-
-		private static TestBean beanD;
-
-	}
 
 }

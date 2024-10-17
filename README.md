@@ -2,6 +2,12 @@
 
 ### All Rights Reserved
 
+## README TODO
+- Better maven instructions for the `tests` and `test-sources` jars
+  - How to use the test util
+- Shadow plugin instructions
+  - `beanification_shade_value` -> `modid` replacement in all files on shade instructions
+
 ## Maven
 ```
 repositories {

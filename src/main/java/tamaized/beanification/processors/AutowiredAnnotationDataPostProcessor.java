@@ -17,9 +17,11 @@ import java.util.stream.Stream;
 @BeanProcessor
 public class AutowiredAnnotationDataPostProcessor implements AnnotationDataPostProcessor {
 
-	private final DistAnnotationRetriever distAnnotationRetriever = InternalBeanContext.inject(DistAnnotationRetriever.class);
+	@InternalAutowired
+	private DistAnnotationRetriever distAnnotationRetriever;
 
-	private final InternalReflectionHelper internalReflectionHelper = InternalBeanContext.inject(InternalReflectionHelper.class);
+	@InternalAutowired
+	private InternalReflectionHelper internalReflectionHelper;
 
 	@Override
 	public void process(BeanContext.BeanContextInternalInjector context, ModContainer modContainer, ModFileScanData scanData, Object bean, AtomicReference<Object> currentInjectionTarget) throws Throwable {

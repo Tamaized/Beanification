@@ -39,8 +39,4 @@ public class BeanContextTests {
 		assertSame(namedBean, instance.injectInternal(TestBean.class, "named"));
 	}
 
-	private static class TestBean {
-
-	}
-
 }

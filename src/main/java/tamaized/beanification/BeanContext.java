@@ -64,14 +64,15 @@ public final class BeanContext extends AbstractBeanContext {
 
 	static BeanContext INSTANCE = new BeanContext();
 
-	private final DistAnnotationRetriever distAnnotationRetriever = InternalBeanContext.inject(DistAnnotationRetriever.class);
+	@InternalAutowired
+	private DistAnnotationRetriever distAnnotationRetriever;
 
 	private final BeanContextRegistrar beanContextRegistrar = new BeanContextRegistrar();
 	private final BeanContextInternalRegistrar beanContextInternalRegistrar = new BeanContextInternalRegistrar();
 	private final BeanContextInternalInjector beanContextInternalInjector = new BeanContextInternalInjector();
 
 	private BeanContext() {
-
+		InternalBeanContext.injectInto(this);
 	}
 
 	/**
@@ -128,6 +129,9 @@ public final class BeanContext extends AbstractBeanContext {
 					LOGGER.debug("Registered Bean annotation post processor: {}", c);
 				}
 			}
+
+			annotationDataProcessors.forEach(InternalBeanContext::injectInto);
+			annotationDataPostProcessors.forEach(InternalBeanContext::injectInto);
 
 			for (AnnotationDataProcessor annotationDataProcessor : annotationDataProcessors) {
 				LOGGER.debug("Running processor {}", annotationDataProcessor.getClass());

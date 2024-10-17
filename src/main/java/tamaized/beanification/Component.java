@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Component {
 
-	String DEFAULT_VALUE = "!twilightforest:internal:bean:DEFAULT!";
+	String DEFAULT_VALUE = "<beanification_shade_value>!beanification:internal:bean:DEFAULT!";
 
 	String value() default DEFAULT_VALUE;
 
