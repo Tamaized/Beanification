@@ -1,4 +1,4 @@
-package tamaized.beanification;
+package tamaized.beanification.internal;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -7,7 +7,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import tamaized.beanification.internal.DistAnnotationRetriever;
+import tamaized.beanification.Autowired;
 import tamaized.beanification.junit.MockitoRunner;
 
 import java.lang.annotation.ElementType;
