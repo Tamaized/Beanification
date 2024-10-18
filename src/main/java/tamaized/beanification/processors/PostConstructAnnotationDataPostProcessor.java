@@ -3,7 +3,6 @@ package tamaized.beanification.processors;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
-import org.objectweb.asm.Type;
 import tamaized.beanification.BeanContext;
 import tamaized.beanification.InternalBeanContext;
 import tamaized.beanification.internal.DistAnnotationRetriever;

@@ -2,12 +2,10 @@ package tamaized.beanification.processors;
 
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforgespi.language.ModFileScanData;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.objectweb.asm.Type;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
