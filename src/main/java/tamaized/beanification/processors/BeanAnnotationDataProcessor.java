@@ -23,9 +23,9 @@ public class BeanAnnotationDataProcessor implements AnnotationDataProcessor {
 
 	@Override
 	public void process(BeanContext.BeanContextInternalRegistrar context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, Bean.class, ElementType.METHOD).iterator(); it.hasNext(); ) {
+		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
-			Method method = internalReflectionHelper.forName(data.clazz().getClassName()).getDeclaredMethod(data.memberName());
+			Method method = internalReflectionHelper.getDeclaredMethod(Class.forName(data.clazz().getClassName()), data.memberName());
 			Bean annotation = method.getAnnotation(Bean.class);
 			context.register(method.getReturnType(), Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value(), method.invoke(null));
 		}

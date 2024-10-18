@@ -21,10 +21,10 @@ public class ComponentAnnotationDataProcessor implements AnnotationDataProcessor
 
 	@Override
 	public void process(BeanContext.BeanContextInternalRegistrar context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE).iterator(); it.hasNext(); ) {
+		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
-			Class<?> c = internalReflectionHelper.forName(data.clazz().getClassName());
-			Component annotation = c.getAnnotation(Component.class);
+			Class<?> c = Class.forName(data.clazz().getClassName());
+			Component annotation = internalReflectionHelper.getAnnotation(c, Component.class);
 			context.register(c, Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value(), c.getConstructor().newInstance());
 		}
 	}

@@ -42,7 +42,7 @@ public class DistAnnotationRetrieverTests {
 			new ModFileScanData.AnnotationData(null, null, null, "g", Map.of())
 		));
 
-		List<ModFileScanData.AnnotationData> result = instance.retrieve(scanData, Autowired.class, ElementType.FIELD).toList();
+		List<ModFileScanData.AnnotationData> result = instance.retrieve(scanData, ElementType.FIELD, Autowired.class).toList();
 
 		assertEquals(5, result.size());
 		assertEquals("a", result.getFirst().memberName());

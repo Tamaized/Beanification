@@ -25,7 +25,7 @@ public class AutowiredAnnotationDataPostProcessor implements AnnotationDataPostP
 
 	@Override
 	public void process(BeanContext.BeanContextInternalInjector context, ModContainer modContainer, ModFileScanData scanData, Object bean, AtomicReference<Object> currentInjectionTarget) throws Throwable {
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)
+		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)
 			.filter(a -> internalReflectionHelper.classOrSuperEquals(a.clazz(), bean.getClass())).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
 			Optional<String> name = Optional.ofNullable(data.annotationData().get("value"))
@@ -44,22 +44,18 @@ public class AutowiredAnnotationDataPostProcessor implements AnnotationDataPostP
 
 	@Override
 	public void process(BeanContext.BeanContextInternalInjector context, ModContainer modContainer, ModFileScanData scanData, AtomicReference<Object> currentInjectionTarget) throws Throwable {
-		List<String> ignoredClasses = Stream.concat(
-			distAnnotationRetriever.retrieve(scanData, Configurable.class, ElementType.TYPE),
-			Stream.concat(
-				distAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE),
-				distAnnotationRetriever.retrieve(scanData, Mod.class, ElementType.TYPE)
-			)
-		).map(d -> d.clazz().getClassName()).toList();
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD).iterator(); it.hasNext(); ) {
+		List<String> ignoredClasses = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Configurable.class, Component.class, Mod.class)
+			.map(d -> d.clazz().getClassName())
+			.toList();
+		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
 			currentInjectionTarget.set(data.clazz());
 			if (ignoredClasses.contains(data.clazz().getClassName()))
 				continue;
-			Class<?> type = internalReflectionHelper.forName(data.clazz().getClassName());
-			if (type.isAnnotationPresent(Configurable.class) || type.isAnnotationPresent(Component.class) || type.isAnnotationPresent(Mod.class))
+			Class<?> type = Class.forName(data.clazz().getClassName());
+			if (internalReflectionHelper.isAnyAnnotationPresent(type, Configurable.class, Component.class, Mod.class))
 				continue;
-			Field field = type.getDeclaredField(data.memberName());
+			Field field = internalReflectionHelper.getDeclaredField(type, data.memberName());
 			currentInjectionTarget.set(field);
 			Autowired annotation = field.getAnnotation(Autowired.class);
 			final @Nullable String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();

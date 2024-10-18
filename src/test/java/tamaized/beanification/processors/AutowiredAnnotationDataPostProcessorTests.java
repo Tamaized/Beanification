@@ -56,7 +56,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 	@Test
 	public void processBean() throws IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
 		));
 
@@ -82,7 +82,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 	@Test
 	public void processBeanNamed() throws IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", Map.of("value", "test"))
 		));
 
@@ -105,235 +105,210 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		verify(target, times(1)).set(bean, dependencyBean);
 	}
 
-	/*@Test
-	public void processBeanStaticMember() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "beanC", new HashMap<>())
-			));
+	@Test
+	public void processBeanStaticMember() throws IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
+		));
 
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		TestBean bean = new TestBean();
+		TestBean dependencyBean = new TestBean();
 
-			TestBean bean = new TestBean();
+		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), bean.getClass())).thenReturn(true);
 
-			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
-				clazz.when(() -> TestBean.class.getDeclaredField("beanC")).thenReturn(mockField(true));
+		Field target = mockField(true);
+		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(bean.getClass(), "target", Component.DEFAULT_VALUE)).thenReturn(List.of(target));
 
-				IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
 
-				assertEquals("@Autowired fields must be non-static inside Beans", exception.getMessage());
-			}
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		doReturn(dependencyBean).when(injector).inject(isNull(), isNull());
 
-			assertNull(TestBean.beanC);
-			assertNull(TestBean.beanD);
-		}
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+
+		assertEquals("@Autowired fields must be non-static inside Beans", exception.getMessage());
+
+		verify(target, never()).trySetAccessible();
+		verify(target, never()).set(bean, dependencyBean);
 	}
 
 	@Test
-	public void processBeanStaticMemberNamed() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "beanD", Map.of("value", "test"))
-			));
+	public void processNonBean() throws NoSuchFieldException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
 
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Configurable.class, Component.class, Mod.class)).thenReturn(Stream.empty());
 
-			TestBean bean = new TestBean();
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
+		));
 
-			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
-				clazz.when(() -> TestBean.class.getDeclaredField("beanD")).thenReturn(mockField(true));
+		TestBean dependencyBean = new TestBean();
 
-				IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-				assertEquals("@Autowired fields must be non-static inside Beans", exception.getMessage());
-			}
+		Field target = mockField(true);
+		doReturn(TestBean.class).when(target).getType();
+		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
 
-			assertNull(TestBean.beanC);
-			assertNull(TestBean.beanD);
-		}
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
+
+		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, times(1)).set(null, dependencyBean);
 	}
 
 	@Test
-	public void processNonBean() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
+	public void processNonBeanNamed() throws NoSuchFieldException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Configurable.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Mod.class, ElementType.TYPE)).thenReturn(Stream.empty());
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Configurable.class, Component.class, Mod.class)).thenReturn(Stream.empty());
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "beanC", new HashMap<>()),
-				new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "beanD", Map.of("value", "test"))
-			));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", Map.of("value", "test"))
+		));
 
-			TestBean beanA = new TestBean();
-			TestBean beanB = new TestBean();
+		TestBean dependencyBean = new TestBean();
 
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
-			when(injector.inject(TestBean.class, null)).thenReturn(beanA);
-			when(injector.inject(TestBean.class, "test")).thenReturn(beanB);
+		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
-				clazz.when(() -> TestBean.class.getDeclaredField("beanC")).thenReturn(mockField(true));
-				clazz.when(() -> TestBean.class.getDeclaredField("beanD")).thenReturn(mockField(true, "test"));
+		Field target = mockField(true, "test");
+		doReturn(TestBean.class).when(target).getType();
+		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
 
-				assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
-			}
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		when(injector.inject(TestBean.class, "test")).thenReturn(dependencyBean);
 
-			assertSame(beanA, TestBean.beanC);
-			assertSame(beanB, TestBean.beanD);
-		}
+		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, times(1)).set(null, dependencyBean);
 	}
 
 	@Test
-	public void processNonBeanNonStaticMember() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
+	public void processNonBeanNonStatic() throws NoSuchFieldException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Configurable.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Mod.class, ElementType.TYPE)).thenReturn(Stream.empty());
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Configurable.class, Component.class, Mod.class)).thenReturn(Stream.empty());
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "beanA", new HashMap<>())
-			));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
+		));
 
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		TestBean dependencyBean = new TestBean();
 
-			try (MockedStatic<Class<?>> clazz = mockStatic(TestBean.class.getClass())) {
-				clazz.when(() -> TestBean.class.getDeclaredField("beanA")).thenReturn(mockField(true));
+		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-				IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		Field target = mockField(true);
+		doReturn(TestBean.class).when(target).getType();
+		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
 
-				assertEquals("@Autowired fields must be static outside of Beans", exception.getMessage());
-			}
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
 
-			assertNull(TestBean.beanC);
-			assertNull(TestBean.beanD);
-		}
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, new AtomicReference<>()));
+
+		assertEquals("@Autowired fields must be static outside of Beans", exception.getMessage());
+
+		verify(target, never()).trySetAccessible();
+		verify(target, never()).set(null, dependencyBean);
 	}
 
 	@Test
-	public void processNonBeanNonStaticMemberNamed() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
+	public void processNonBeanNonStaticContextContains() throws NoSuchFieldException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Configurable.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Mod.class, ElementType.TYPE)).thenReturn(Stream.empty());
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Configurable.class, Component.class, Mod.class)).thenReturn(Stream.empty());
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "beanB", Map.of("value", "test"))
-			));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
+		));
 
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		TestBean dependencyBean = new TestBean();
 
-			try (MockedStatic<Class> clazz = mockStatic(Class.class)) {
-				clazz.when(() -> TestBean.class.getDeclaredField("beanB")).thenReturn(mockField(true, "test"));
+		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-				IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		Field target = mockField(true);
+		doReturn(TestBean.class).when(target).getType();
+		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
 
-				assertEquals("@Autowired fields must be static outside of Beans", exception.getMessage());
-			}
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
 
-			assertNull(TestBean.beanC);
-			assertNull(TestBean.beanD);
-		}
-	}*/
+		when(injector.contains(TestBean.class, null)).thenReturn(true);
 
-	/*@Test
-	public void processNonBeanConfigurableIgnored() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
+		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Configurable.class, ElementType.TYPE)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(ConfigurableTestBean.class), "test", new HashMap<>())
-			));
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Mod.class, ElementType.TYPE)).thenReturn(Stream.empty());
-
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(ConfigurableTestBean.class), "test", new HashMap<>())
-			));
-
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
-			when(injector.inject(TestBean.class, null)).thenReturn(new TestBean());
-
-			assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
-
-			assertNull(ConfigurableTestBean.test);
-		}
+		verify(target, never()).trySetAccessible();
+		verify(target, never()).set(null, dependencyBean);
 	}
 
 	@Test
-	public void processNonBeanConfigurablePresent() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
+	public void processNonBeanNonStaticIgnored() throws NoSuchFieldException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Configurable.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Mod.class, ElementType.TYPE)).thenReturn(Stream.empty());
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Configurable.class, Component.class, Mod.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
+		));
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(ConfigurableTestBean.class), "test", new HashMap<>())
-			));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
+		));
 
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
-			when(injector.inject(TestBean.class, null)).thenReturn(new TestBean());
+		TestBean dependencyBean = new TestBean();
 
-			assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-			assertNull(ConfigurableTestBean.test);
-		}
+		Field target = mockField(true);
+		doReturn(TestBean.class).when(target).getType();
+		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
+
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
+
+		when(injector.contains(TestBean.class, null)).thenReturn(true);
+
+		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+
+		verify(target, never()).trySetAccessible();
+		verify(target, never()).set(null, dependencyBean);
 	}
 
 	@Test
-	public void processNonBeanComponentIgnored() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
+	public void processNonBeanNonStaticPresent() throws NoSuchFieldException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Configurable.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(ComponentTestBean.class), "test", new HashMap<>())
-			));
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Mod.class, ElementType.TYPE)).thenReturn(Stream.empty());
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Configurable.class, Component.class, Mod.class)).thenReturn(Stream.empty());
 
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(ComponentTestBean.class), "test", new HashMap<>())
-			));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "target", new HashMap<>())
+		));
 
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
-			when(injector.inject(TestBean.class, null)).thenReturn(new TestBean());
+		TestBean dependencyBean = new TestBean();
 
-			assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(true);
 
-			assertNull(ComponentTestBean.test);
-		}
+		Field target = mockField(true);
+		doReturn(TestBean.class).when(target).getType();
+		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
+
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
+
+		when(injector.contains(TestBean.class, null)).thenReturn(true);
+
+		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+
+		verify(target, never()).trySetAccessible();
+		verify(target, never()).set(null, dependencyBean);
 	}
-
-	@Test
-	public void processNonBeanComponentPresent() {
-		try (MockedStatic<DistAnnotationRetriever> distAnnotationRetriever = mockStatic(DistAnnotationRetriever.class)) {
-			ModFileScanData scanData = mock(ModFileScanData.class);
-
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Configurable.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Component.class, ElementType.TYPE)).thenReturn(Stream.empty());
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Mod.class, ElementType.TYPE)).thenReturn(Stream.empty());
-
-			distAnnotationRetriever.when(() -> DistAnnotationRetriever.retrieve(scanData, Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
-				new ModFileScanData.AnnotationData(null, null, Type.getType(ComponentTestBean.class), "test", new HashMap<>())
-			));
-
-			BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
-			when(injector.inject(TestBean.class, null)).thenReturn(new TestBean());
-
-			assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
-
-			assertNull(ComponentTestBean.test);
-		}
-	}*/
 
 }

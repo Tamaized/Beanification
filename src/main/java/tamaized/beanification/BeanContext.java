@@ -110,7 +110,7 @@ public final class BeanContext extends AbstractBeanContext {
 			List<AnnotationDataProcessor> annotationDataProcessors = new ArrayList<>();
 			List<AnnotationDataPostProcessor> annotationDataPostProcessors = new ArrayList<>();
 
-			for (Iterator<? extends Class<?>> it = distAnnotationRetriever.retrieve(scanData, BeanProcessor.class, ElementType.TYPE)
+			for (Iterator<? extends Class<?>> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, BeanProcessor.class)
 				.map(a -> {
 					try {
 						return Class.forName(a.clazz().getClassName());

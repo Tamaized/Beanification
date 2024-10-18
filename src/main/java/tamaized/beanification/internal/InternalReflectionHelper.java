@@ -4,7 +4,9 @@ import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Type;
 import tamaized.beanification.Autowired;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +42,25 @@ public class InternalReflectionHelper {
 		return Modifier.isStatic(field.getModifiers());
 	}
 
-	public Class<?> forName(String name) throws ClassNotFoundException {
-		return Class.forName(name);
+	@SafeVarargs
+	public final boolean isAnyAnnotationPresent(Class<?> clazz, Class<? extends Annotation>... annotations) {
+		for (Class<? extends Annotation> annotation : annotations) {
+			if (clazz.isAnnotationPresent(annotation))
+				return true;
+		}
+		return false;
+	}
+
+	public <A extends Annotation> A getAnnotation(Class<?> clazz, Class<A> annotation) {
+		return clazz.getAnnotation(annotation);
+	}
+
+	public Field getDeclaredField(Class<?> clazz, String name) throws NoSuchFieldException {
+		return clazz.getDeclaredField(name);
+	}
+
+	public Method getDeclaredMethod(Class<?> clazz, String name) throws NoSuchMethodException {
+		return clazz.getDeclaredMethod(name);
 	}
 
 	public Type getType(Class<?> c) {
