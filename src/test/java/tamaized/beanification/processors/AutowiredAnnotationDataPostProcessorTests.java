@@ -1,5 +1,6 @@
 package tamaized.beanification.processors;
 
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
@@ -36,18 +37,16 @@ public class AutowiredAnnotationDataPostProcessorTests {
 	@InjectMocks
 	private AutowiredAnnotationDataPostProcessor instance;
 
-	private Field mockField(boolean autowired) {
-		return mockField(autowired, Component.DEFAULT_VALUE);
+	private Field mockField() {
+		return mockField(Component.DEFAULT_VALUE);
 	}
 
-	private Field mockField(boolean autowired, String value) {
+	private Field mockField(String value) {
 		Field f = mock(Field.class);
-		when(f.isAnnotationPresent(Autowired.class)).thenReturn(autowired);
-		if (autowired) {
-			Autowired annotation = mock(Autowired.class);
-			when(annotation.value()).thenReturn(value);
-			when(f.getAnnotation(Autowired.class)).thenReturn(annotation);
-		}
+		when(f.isAnnotationPresent(Autowired.class)).thenReturn(true);
+		Autowired annotation = mock(Autowired.class);
+		when(annotation.value()).thenReturn(value);
+		when(f.getAnnotation(Autowired.class)).thenReturn(annotation);
 		return f;
 	}
 
@@ -63,7 +62,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), bean.getClass())).thenReturn(true);
 
-		Field target = mockField(true);
+		Field target = mockField();
 		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(bean.getClass(), "target", Component.DEFAULT_VALUE)).thenReturn(List.of(target));
 
 		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
@@ -71,7 +70,9 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		doReturn(dependencyBean).when(injector).inject(isNull(), isNull());
 
-		assertDoesNotThrow(() -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+		ModContainer modContainer = mock(ModContainer.class);
+
+		assertDoesNotThrow(() -> instance.process(injector, modContainer, scanData, bean, new AtomicReference<>()));
 
 		verify(target, times(1)).trySetAccessible();
 		verify(target, times(1)).set(bean, dependencyBean);
@@ -89,7 +90,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), bean.getClass())).thenReturn(true);
 
-		Field target = mockField(true, "test");
+		Field target = mockField("test");
 		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(bean.getClass(), "target", "test")).thenReturn(List.of(target));
 
 		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
@@ -97,7 +98,9 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		doReturn(dependencyBean).when(injector).inject(isNull(), eq("test"));
 
-		assertDoesNotThrow(() -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+		ModContainer modContainer = mock(ModContainer.class);
+
+		assertDoesNotThrow(() -> instance.process(injector, modContainer, scanData, bean, new AtomicReference<>()));
 
 		verify(target, times(1)).trySetAccessible();
 		verify(target, times(1)).set(bean, dependencyBean);
@@ -115,7 +118,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), bean.getClass())).thenReturn(true);
 
-		Field target = mockField(true);
+		Field target = mockField();
 		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(bean.getClass(), "target", Component.DEFAULT_VALUE)).thenReturn(List.of(target));
 
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -123,7 +126,9 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		doReturn(dependencyBean).when(injector).inject(isNull(), isNull());
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, bean, new AtomicReference<>()));
+		ModContainer modContainer = mock(ModContainer.class);
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, modContainer, scanData, bean, new AtomicReference<>()));
 
 		assertEquals("@Autowired fields must be non-static inside Beans", exception.getMessage());
 
@@ -145,7 +150,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-		Field target = mockField(true);
+		Field target = mockField();
 		doReturn(TestBean.class).when(target).getType();
 		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -153,7 +158,9 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
 
-		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		ModContainer modContainer = mock(ModContainer.class);
+
+		assertDoesNotThrow(() -> instance.process(injector, modContainer, scanData, new AtomicReference<>()));
 
 		verify(target, times(1)).trySetAccessible();
 		verify(target, times(1)).set(null, dependencyBean);
@@ -173,7 +180,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-		Field target = mockField(true, "test");
+		Field target = mockField("test");
 		doReturn(TestBean.class).when(target).getType();
 		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -181,7 +188,9 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		when(injector.inject(TestBean.class, "test")).thenReturn(dependencyBean);
 
-		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		ModContainer modContainer = mock(ModContainer.class);
+
+		assertDoesNotThrow(() -> instance.process(injector, modContainer, scanData, new AtomicReference<>()));
 
 		verify(target, times(1)).trySetAccessible();
 		verify(target, times(1)).set(null, dependencyBean);
@@ -201,7 +210,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-		Field target = mockField(true);
+		Field target = mockField();
 		doReturn(TestBean.class).when(target).getType();
 		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
 		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
@@ -209,7 +218,9 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		ModContainer modContainer = mock(ModContainer.class);
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(injector, modContainer, scanData, new AtomicReference<>()));
 
 		assertEquals("@Autowired fields must be static outside of Beans", exception.getMessage());
 
@@ -231,7 +242,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-		Field target = mockField(true);
+		Field target = mockField();
 		doReturn(TestBean.class).when(target).getType();
 		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
 		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
@@ -239,9 +250,11 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
 
+		ModContainer modContainer = mock(ModContainer.class);
+
 		when(injector.contains(TestBean.class, null)).thenReturn(true);
 
-		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		assertDoesNotThrow(() -> instance.process(injector, modContainer, scanData, new AtomicReference<>()));
 
 		verify(target, never()).trySetAccessible();
 		verify(target, never()).set(null, dependencyBean);
@@ -263,7 +276,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(false);
 
-		Field target = mockField(true);
+		Field target = mockField();
 		doReturn(TestBean.class).when(target).getType();
 		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -271,9 +284,11 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
 
+		ModContainer modContainer = mock(ModContainer.class);
+
 		when(injector.contains(TestBean.class, null)).thenReturn(true);
 
-		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		assertDoesNotThrow(() -> instance.process(injector, modContainer, scanData, new AtomicReference<>()));
 
 		verify(target, never()).trySetAccessible();
 		verify(target, never()).set(null, dependencyBean);
@@ -293,7 +308,7 @@ public class AutowiredAnnotationDataPostProcessorTests {
 
 		when(internalReflectionHelper.isAnyAnnotationPresent(TestBean.class, Configurable.class, Component.class, Mod.class)).thenReturn(true);
 
-		Field target = mockField(true);
+		Field target = mockField();
 		doReturn(TestBean.class).when(target).getType();
 		when(internalReflectionHelper.getDeclaredField(TestBean.class, "target")).thenReturn(target);
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -301,9 +316,11 @@ public class AutowiredAnnotationDataPostProcessorTests {
 		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
 		when(injector.inject(TestBean.class, null)).thenReturn(dependencyBean);
 
+		ModContainer modContainer = mock(ModContainer.class);
+
 		when(injector.contains(TestBean.class, null)).thenReturn(true);
 
-		assertDoesNotThrow(() -> instance.process(injector, null, scanData, new AtomicReference<>()));
+		assertDoesNotThrow(() -> instance.process(injector, modContainer, scanData, new AtomicReference<>()));
 
 		verify(target, never()).trySetAccessible();
 		verify(target, never()).set(null, dependencyBean);

@@ -42,6 +42,10 @@ public class InternalReflectionHelper {
 		return Modifier.isStatic(field.getModifiers());
 	}
 
+	public boolean isStatic(Method method) {
+		return Modifier.isStatic(method.getModifiers());
+	}
+
 	@SafeVarargs
 	public final boolean isAnyAnnotationPresent(Class<?> clazz, Class<? extends Annotation>... annotations) {
 		for (Class<? extends Annotation> annotation : annotations) {
