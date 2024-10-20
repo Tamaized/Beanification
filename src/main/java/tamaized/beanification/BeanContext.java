@@ -2,11 +2,13 @@ package tamaized.beanification;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
@@ -222,7 +224,7 @@ public final class BeanContext extends AbstractBeanContext {
 		try {
 			Stream.concat(
 				((Map<EntityType<?>, EntityRenderer<?>>) handle_EntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getEntityRenderDispatcher())).values().stream(),
-				((Map<EntityType<?>, EntityRenderer<?>>) handle_BlockEntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getBlockEntityRenderDispatcher())).values().stream()
+				((Map<BlockEntityType<?>, BlockEntityRenderer<?>>) handle_BlockEntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getBlockEntityRenderDispatcher())).values().stream()
 			).forEach(renderer -> {
 				try {
 					if (classOrSuperHasAnnotation(renderer.getClass(), Configurable.class)) {
