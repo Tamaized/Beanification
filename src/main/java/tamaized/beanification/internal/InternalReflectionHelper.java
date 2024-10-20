@@ -1,6 +1,7 @@
 package tamaized.beanification.internal;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import tamaized.beanification.Autowired;
 
@@ -63,8 +64,8 @@ public class InternalReflectionHelper {
 		return clazz.getDeclaredField(name);
 	}
 
-	public Method getDeclaredMethod(Class<?> clazz, String name) throws NoSuchMethodException {
-		return clazz.getDeclaredMethod(name);
+	public Method getDeclaredMethod(Class<?> clazz, String name, @Nullable Class<?>... args) throws NoSuchMethodException {
+		return clazz.getDeclaredMethod(name, args);
 	}
 
 	public Type getType(Class<?> c) {

@@ -4,14 +4,13 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.BeanContext;
-import tamaized.beanification.InternalBeanContext;
+import tamaized.beanification.InternalAutowired;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.PostConstruct;
 import tamaized.beanification.internal.InternalReflectionHelper;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -20,9 +19,11 @@ import java.util.concurrent.atomic.AtomicReference;
 @BeanProcessor(priority = 1)
 public class PostConstructAnnotationDataPostProcessor implements AnnotationDataPostProcessor {
 
-	private final DistAnnotationRetriever distAnnotationRetriever = InternalBeanContext.inject(DistAnnotationRetriever.class);
+	@InternalAutowired
+	private DistAnnotationRetriever distAnnotationRetriever;
 
-	private final InternalReflectionHelper internalReflectionHelper = InternalBeanContext.inject(InternalReflectionHelper.class);
+	@InternalAutowired
+	private InternalReflectionHelper internalReflectionHelper;
 
 	@Override
 	public void process(BeanContext.BeanContextInternalInjector context, ModContainer modContainer, ModFileScanData scanData, Object bean, AtomicReference<Object> currentInjectionTarget) throws Throwable {
@@ -30,12 +31,12 @@ public class PostConstructAnnotationDataPostProcessor implements AnnotationDataP
 			String name = it.next().memberName().split("\\(")[0];
 			List<Method> methods = new ArrayList<>();
 			try {
-				methods.add(bean.getClass().getDeclaredMethod(name));
+				methods.add(internalReflectionHelper.getDeclaredMethod(bean.getClass(), name));
 			} catch (NoSuchMethodException ex) {
 				// NO-OP
 			}
 			try {
-				methods.add(bean.getClass().getDeclaredMethod(name, IEventBus.class));
+				methods.add(internalReflectionHelper.getDeclaredMethod(bean.getClass(), name, IEventBus.class));
 			} catch (NoSuchMethodException ex) {
 				// NO-OP
 			}
@@ -43,7 +44,7 @@ public class PostConstructAnnotationDataPostProcessor implements AnnotationDataP
 				if (method.isAnnotationPresent(PostConstruct.class)) {
 					currentInjectionTarget.set(method);
 
-					if (Modifier.isStatic(method.getModifiers())) {
+					if (internalReflectionHelper.isStatic(method)) {
 						throw new IllegalStateException("@PostConstruct methods must be non-static");
 					}
 
