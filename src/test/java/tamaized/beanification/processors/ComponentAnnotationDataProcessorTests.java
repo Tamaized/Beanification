@@ -4,7 +4,6 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.objectweb.asm.Type;
@@ -47,14 +46,12 @@ public class ComponentAnnotationDataProcessorTests {
 		when(internalReflectionHelper.getAnnotation(TestBean.class, Component.class)).thenReturn(bean);
 
 		BeanContext.BeanContextInternalRegistrar context = mock(BeanContext.BeanContextInternalRegistrar.class);
-		ArgumentCaptor<TestBean> captor = ArgumentCaptor.forClass(TestBean.class);
 
 		ModContainer modContainer = mock(ModContainer.class);
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
-		verify(context, times(1)).register(eq(TestBean.class), isNull(), captor.capture());
-		assertNotNull(captor.getValue());
+		verify(context, times(1)).register(eq(TestBean.class), isNull(), isNotNull());
 	}
 
 	@Test
@@ -69,14 +66,12 @@ public class ComponentAnnotationDataProcessorTests {
 		when(internalReflectionHelper.getAnnotation(TestBean.class, Component.class)).thenReturn(bean);
 
 		BeanContext.BeanContextInternalRegistrar context = mock(BeanContext.BeanContextInternalRegistrar.class);
-		ArgumentCaptor<TestBean> captor = ArgumentCaptor.forClass(TestBean.class);
 
 		ModContainer modContainer = mock(ModContainer.class);
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
-		verify(context, times(1)).register(eq(TestBean.class), eq("test"), captor.capture());
-		assertNotNull(captor.getValue());
+		verify(context, times(1)).register(eq(TestBean.class), eq("test"), isNotNull());
 	}
 
 }
