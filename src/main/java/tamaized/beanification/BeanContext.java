@@ -40,29 +40,10 @@ public final class BeanContext extends AbstractBeanContext {
 	private static final Logger LOGGER = LogManager.getLogger(BeanContext.class);
 
 	private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-	private static final Field EntityRenderDispatcher_renderers = ObfuscationReflectionHelper.findField(EntityRenderDispatcher.class, "renderers");
-	private static final Field BlockEntityRenderDispatcher_renderers = ObfuscationReflectionHelper.findField(BlockEntityRenderDispatcher.class, "renderers");
-	private static final MethodHandle handle_EntityRenderDispatcher_renderers;
-	private static final MethodHandle handle_BlockEntityRenderDispatcher_renderers;
-
-	static {
-		MethodHandle tmp_handle_EntityRenderDispatcher_renderers = null;
-		MethodHandle tmp_handle_BlockEntityRenderDispatcher_renderers = null;
-
-		try {
-			tmp_handle_EntityRenderDispatcher_renderers = LOOKUP.unreflectGetter(EntityRenderDispatcher_renderers);
-			tmp_handle_BlockEntityRenderDispatcher_renderers = LOOKUP.unreflectGetter(BlockEntityRenderDispatcher_renderers);
-		} catch (IllegalAccessException e) {
-			LOGGER.error("Exception", e);
-		}
-
-		if (tmp_handle_EntityRenderDispatcher_renderers == null || tmp_handle_BlockEntityRenderDispatcher_renderers == null) {
-			throw new RuntimeException("Could not construct BeanContext");
-		}
-
-		handle_EntityRenderDispatcher_renderers = tmp_handle_EntityRenderDispatcher_renderers;
-		handle_BlockEntityRenderDispatcher_renderers = tmp_handle_BlockEntityRenderDispatcher_renderers;
-	}
+	@Nullable
+	private static MethodHandle handle_EntityRenderDispatcher_renderers;
+	@Nullable
+	private static MethodHandle handle_BlockEntityRenderDispatcher_renderers;
 
 	static BeanContext INSTANCE = new BeanContext();
 
@@ -221,6 +202,29 @@ public final class BeanContext extends AbstractBeanContext {
 		final long ms = System.currentTimeMillis();
 		LOGGER.debug("Processing renderer objects");
 		AtomicReference<Object> curInj = new AtomicReference<>();
+
+		if (handle_EntityRenderDispatcher_renderers == null || handle_BlockEntityRenderDispatcher_renderers == null) {
+			Field entityRenderDispatcher_renderers = ObfuscationReflectionHelper.findField(EntityRenderDispatcher.class, "renderers");
+			Field blockEntityRenderDispatcher_renderers = ObfuscationReflectionHelper.findField(BlockEntityRenderDispatcher.class, "renderers");
+
+			MethodHandle tmp_handle_EntityRenderDispatcher_renderers = null;
+			MethodHandle tmp_handle_BlockEntityRenderDispatcher_renderers = null;
+
+			try {
+				tmp_handle_EntityRenderDispatcher_renderers = LOOKUP.unreflectGetter(entityRenderDispatcher_renderers);
+				tmp_handle_BlockEntityRenderDispatcher_renderers = LOOKUP.unreflectGetter(blockEntityRenderDispatcher_renderers);
+			} catch (IllegalAccessException e) {
+				LOGGER.error("Exception", e);
+			}
+
+			if (tmp_handle_EntityRenderDispatcher_renderers == null || tmp_handle_BlockEntityRenderDispatcher_renderers == null) {
+				throw new RuntimeException("Could not construct BeanContext");
+			}
+
+			handle_EntityRenderDispatcher_renderers = tmp_handle_EntityRenderDispatcher_renderers;
+			handle_BlockEntityRenderDispatcher_renderers = tmp_handle_BlockEntityRenderDispatcher_renderers;
+		}
+
 		try {
 			Stream.concat(
 				((Map<EntityType<?>, EntityRenderer<?>>) handle_EntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getEntityRenderDispatcher())).values().stream(),
