@@ -215,14 +215,14 @@ public final class BeanContext extends AbstractBeanContext {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void injectRenderers(ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors) {
+	void injectRenderers(ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors) {
 		final long ms = System.currentTimeMillis();
 		LOGGER.debug("Processing renderer objects");
 		AtomicReference<Object> curInj = new AtomicReference<>();
 		try {
 			Stream.concat(
 				((Map<EntityType<?>, EntityRenderer<?>>) handle_EntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getEntityRenderDispatcher())).values().stream(),
-				((Map<EntityType<?>, EntityRenderer<?>>) handle_BlockEntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getEntityRenderDispatcher())).values().stream()
+				((Map<EntityType<?>, EntityRenderer<?>>) handle_BlockEntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getBlockEntityRenderDispatcher())).values().stream()
 			).forEach(renderer -> {
 				try {
 					if (classOrSuperHasAnnotation(renderer.getClass(), Configurable.class)) {
