@@ -233,6 +233,7 @@ public final class BeanContext extends AbstractBeanContext {
 				}
 			});
 		} catch (Throwable e) {
+			LOGGER.error("Exception during renderer injection", e);
 			throw new RuntimeException(e);
 		}
 		LOGGER.debug("Finished processing renderer objects in {} ms", System.currentTimeMillis() - ms);
