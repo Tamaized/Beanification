@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoFixer.class, MockitoRunner.class})
-public class BeanAnnotationDataPostProcessorTests {
+public class BeanAnnotationDataProcessorTests {
 
 	@Mock
 	private DistAnnotationRetriever distAnnotationRetriever;

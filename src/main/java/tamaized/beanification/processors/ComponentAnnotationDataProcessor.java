@@ -4,7 +4,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.BeanContext;
 import tamaized.beanification.Component;
-import tamaized.beanification.InternalBeanContext;
+import tamaized.beanification.InternalAutowired;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 
@@ -15,9 +15,11 @@ import java.util.Objects;
 @BeanProcessor
 public class ComponentAnnotationDataProcessor implements AnnotationDataProcessor {
 
-	private final DistAnnotationRetriever distAnnotationRetriever = InternalBeanContext.inject(DistAnnotationRetriever.class);
+	@InternalAutowired
+	private DistAnnotationRetriever distAnnotationRetriever;
 
-	private final InternalReflectionHelper internalReflectionHelper = InternalBeanContext.inject(InternalReflectionHelper.class);
+	@InternalAutowired
+	private InternalReflectionHelper internalReflectionHelper;
 
 	@Override
 	public void process(BeanContext.BeanContextInternalRegistrar context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
