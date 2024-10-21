@@ -5,7 +5,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,7 +18,6 @@ import tamaized.beanification.junit.TestConstants;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -26,21 +28,21 @@ public class BeanContextTests {
 	@InjectMocks
 	private BeanContext instance;
 
-	@Test
-	public void contextLoads() {
-		assertDoesNotThrow(() -> instance.initInternal(TestConstants.MODID, registrar -> {}, false));
+	@BeforeEach
+	public void beforeEach() {
+		ModLoadingContext.get().setActiveContainer(ModList.get().getModContainerById(TestConstants.MODID).orElseThrow());
 	}
 
 	@Test
-	public void unknownModContainer() {
-		assertThrows(NoSuchElementException.class, () -> instance.initInternal("missingno", registrar -> {}, false));
+	public void contextLoads() {
+		assertDoesNotThrow(() -> instance.initInternal(registrar -> {}, false));
 	}
 
 	@Test
 	public void directBeanRegistration() {
 		TestBean bean = new TestBean();
 		TestBean namedBean = new TestBean();
-		instance.initInternal(TestConstants.MODID, registrar -> {
+		instance.initInternal(registrar -> {
 			registrar.register(TestBean.class, bean);
 			registrar.register(TestBean.class, "named", namedBean);
 		}, false);

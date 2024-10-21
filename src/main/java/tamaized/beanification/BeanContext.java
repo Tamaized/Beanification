@@ -12,7 +12,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.util.ObfuscationReflectionHelper;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
@@ -59,21 +62,27 @@ public final class BeanContext extends AbstractBeanContext {
 	}
 
 	/**
-	 * @see #init(String, Consumer)
+	 * @see #init(Consumer)
 	 */
-	public static void init(final String modid) {
-		init(modid, null);
+	public static void init() {
+		init(null);
 	}
 
 	/**
 	 * Should be called as early as possible to avoid null bean injections
 	 */
-	public static void init(final String modid, @Nullable Consumer<BeanContextRegistrar> context) {
-		INSTANCE.initInternal(modid, context, false);
+	public static void init(@Nullable Consumer<BeanContextRegistrar> context) {
+		INSTANCE.initInternal(context, false);
 	}
 
-	@SuppressWarnings("SameParameterValue")
-	void initInternal(final String modid, @Nullable Consumer<BeanContextRegistrar> context, boolean forceInjectRegistries) {
+	/**
+	 * Invoke in your {@link net.neoforged.fml.common.Mod} constructor to enable non-static {@link Autowired} in the class
+	 */
+	public static void enableMainModClassInjections(Object mod) {
+		Objects.requireNonNull(ModLoadingContext.get().getActiveContainer().getEventBus()).post(new ProcessBeanAnnotationsEvent(mod));
+	}
+
+	void initInternal(@Nullable Consumer<BeanContextRegistrar> context, boolean forceInjectRegistries) {
 		final long ms = System.currentTimeMillis();
 		LOGGER.info("Starting Bean Context");
 		if (isFrozen())
@@ -85,7 +94,7 @@ public final class BeanContext extends AbstractBeanContext {
 		if (context != null)
 			context.accept(beanContextRegistrar);
 
-		ModContainer modContainer = ModList.get().getModContainerById(modid).orElseThrow();
+		ModContainer modContainer = ModLoadingContext.get().getActiveContainer();
 		ModFileScanData scanData = modContainer.getModInfo().getOwningFile().getFile().getScanResult();
 		AtomicReference<Object> currentInjection = new AtomicReference<>();
 		try {
