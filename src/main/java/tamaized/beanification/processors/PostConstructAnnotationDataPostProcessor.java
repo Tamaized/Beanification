@@ -2,6 +2,7 @@ package tamaized.beanification.processors;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.BeanContext;
 import tamaized.beanification.InternalAutowired;
@@ -51,7 +52,7 @@ public class PostConstructAnnotationDataPostProcessor implements AnnotationDataP
 					method.trySetAccessible();
 
 					if (method.getParameterCount() == 1 && method.getParameterTypes()[0].equals(IEventBus.class)) {
-						method.invoke(bean, modContainer.getEventBus());
+						method.invoke(bean, method.getAnnotation(PostConstruct.class).value() == PostConstruct.Bus.MOD ? modContainer.getEventBus() : NeoForge.EVENT_BUS);
 					} else {
 						if (method.getParameterCount() != 0) {
 							throw new IllegalStateException("@PostConstruct methods must not have parameters or only have one IEventBus parameter");

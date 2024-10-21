@@ -2,6 +2,7 @@ package tamaized.beanification.processors;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,6 +85,10 @@ public class PostConstructAnnotationDataPostProcessorTests {
 		when(target.getParameterCount()).thenReturn(1);
 		when(target.getParameterTypes()).thenReturn(new Class<?>[]{IEventBus.class});
 
+		PostConstruct annotation = mock(PostConstruct.class);
+		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
+		when(target.getAnnotation(PostConstruct.class)).thenReturn(annotation);
+
 		TestBean bean = new TestBean();
 		BeanContext.BeanContextInternalInjector context = mock(BeanContext.BeanContextInternalInjector.class);
 		ModContainer modContainer = mock(ModContainer.class);
@@ -94,6 +99,38 @@ public class PostConstructAnnotationDataPostProcessorTests {
 
 		verify(target, times(1)).trySetAccessible();
 		verify(target, times(1)).invoke(bean, bus);
+	}
+
+	@Test
+	public void processEventBusArgGame() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+		));
+
+		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
+
+		Method target = mock(Method.class);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(target);
+
+		when(target.isAnnotationPresent(PostConstruct.class)).thenReturn(true);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
+		when(target.getParameterCount()).thenReturn(1);
+		when(target.getParameterTypes()).thenReturn(new Class<?>[]{IEventBus.class});
+
+		PostConstruct annotation = mock(PostConstruct.class);
+		when(annotation.value()).thenReturn(PostConstruct.Bus.GAME);
+		when(target.getAnnotation(PostConstruct.class)).thenReturn(annotation);
+
+		TestBean bean = new TestBean();
+		BeanContext.BeanContextInternalInjector context = mock(BeanContext.BeanContextInternalInjector.class);
+		ModContainer modContainer = mock(ModContainer.class);
+
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, bean, new AtomicReference<>()));
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, times(1)).invoke(bean, NeoForge.EVENT_BUS);
 	}
 
 	@Test
