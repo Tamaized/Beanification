@@ -134,6 +134,182 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	}
 
 	@Test
+	public void processEventBusArgWrongType() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+		));
+
+		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
+
+		Method target = mock(Method.class);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(target);
+
+		when(target.isAnnotationPresent(PostConstruct.class)).thenReturn(true);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
+		when(target.getParameterCount()).thenReturn(1);
+		when(target.getParameterTypes()).thenReturn(new Class<?>[]{TestBean.class});
+
+		PostConstruct annotation = mock(PostConstruct.class);
+		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
+		when(target.getAnnotation(PostConstruct.class)).thenReturn(annotation);
+
+		TestBean bean = new TestBean();
+		BeanContext.BeanContextInternalInjector context = mock(BeanContext.BeanContextInternalInjector.class);
+		ModContainer modContainer = mock(ModContainer.class);
+		IEventBus bus = mock(IEventBus.class);
+		when(modContainer.getEventBus()).thenReturn(bus);
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, bean, new AtomicReference<>()));
+
+		assertEquals("@PostConstruct methods must not have parameters or only have one or two IEventBus parameter(s)", exception.getMessage());
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, never()).invoke(bean, bus);
+	}
+
+	@Test
+	public void processEventBusTwoArg() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+		));
+
+		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
+
+		Method target = mock(Method.class);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(target);
+
+		when(target.isAnnotationPresent(PostConstruct.class)).thenReturn(true);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
+		when(target.getParameterCount()).thenReturn(2);
+		when(target.getParameterTypes()).thenReturn(new Class<?>[]{IEventBus.class, IEventBus.class});
+
+		PostConstruct annotation = mock(PostConstruct.class);
+		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
+		when(target.getAnnotation(PostConstruct.class)).thenReturn(annotation);
+
+		TestBean bean = new TestBean();
+		BeanContext.BeanContextInternalInjector context = mock(BeanContext.BeanContextInternalInjector.class);
+		ModContainer modContainer = mock(ModContainer.class);
+		IEventBus bus = mock(IEventBus.class);
+		when(modContainer.getEventBus()).thenReturn(bus);
+
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, bean, new AtomicReference<>()));
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, times(1)).invoke(bean, bus, NeoForge.EVENT_BUS);
+	}
+
+	@Test
+	public void processEventBusTwoArgGame() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+		));
+
+		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
+
+		Method target = mock(Method.class);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(target);
+
+		when(target.isAnnotationPresent(PostConstruct.class)).thenReturn(true);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
+		when(target.getParameterCount()).thenReturn(2);
+		when(target.getParameterTypes()).thenReturn(new Class<?>[]{IEventBus.class, IEventBus.class});
+
+		PostConstruct annotation = mock(PostConstruct.class);
+		when(annotation.value()).thenReturn(PostConstruct.Bus.GAME);
+		when(target.getAnnotation(PostConstruct.class)).thenReturn(annotation);
+
+		TestBean bean = new TestBean();
+		BeanContext.BeanContextInternalInjector context = mock(BeanContext.BeanContextInternalInjector.class);
+		ModContainer modContainer = mock(ModContainer.class);
+		IEventBus bus = mock(IEventBus.class);
+		when(modContainer.getEventBus()).thenReturn(bus);
+
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, bean, new AtomicReference<>()));
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, times(1)).invoke(bean, NeoForge.EVENT_BUS, bus);
+	}
+
+	@Test
+	public void processEventBusTwoArgWrongTypeFirstArg() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+		));
+
+		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
+
+		Method target = mock(Method.class);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(target);
+
+		when(target.isAnnotationPresent(PostConstruct.class)).thenReturn(true);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
+		when(target.getParameterCount()).thenReturn(2);
+		when(target.getParameterTypes()).thenReturn(new Class<?>[]{TestBean.class, IEventBus.class});
+
+		PostConstruct annotation = mock(PostConstruct.class);
+		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
+		when(target.getAnnotation(PostConstruct.class)).thenReturn(annotation);
+
+		TestBean bean = new TestBean();
+		BeanContext.BeanContextInternalInjector context = mock(BeanContext.BeanContextInternalInjector.class);
+		ModContainer modContainer = mock(ModContainer.class);
+		IEventBus bus = mock(IEventBus.class);
+		when(modContainer.getEventBus()).thenReturn(bus);
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, bean, new AtomicReference<>()));
+
+		assertEquals("@PostConstruct methods must not have parameters or only have one or two IEventBus parameter(s)", exception.getMessage());
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, never()).invoke(bean, bus, NeoForge.EVENT_BUS);
+	}
+
+	@Test
+	public void processEventBusTwoArgWrongTypeSecondArg() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+		));
+
+		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
+
+		Method target = mock(Method.class);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(target);
+
+		when(target.isAnnotationPresent(PostConstruct.class)).thenReturn(true);
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
+		when(target.getParameterCount()).thenReturn(2);
+		when(target.getParameterTypes()).thenReturn(new Class<?>[]{IEventBus.class, TestBean.class});
+
+		PostConstruct annotation = mock(PostConstruct.class);
+		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
+		when(target.getAnnotation(PostConstruct.class)).thenReturn(annotation);
+
+		TestBean bean = new TestBean();
+		BeanContext.BeanContextInternalInjector context = mock(BeanContext.BeanContextInternalInjector.class);
+		ModContainer modContainer = mock(ModContainer.class);
+		IEventBus bus = mock(IEventBus.class);
+		when(modContainer.getEventBus()).thenReturn(bus);
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, bean, new AtomicReference<>()));
+
+		assertEquals("@PostConstruct methods must not have parameters or only have one or two IEventBus parameter(s)", exception.getMessage());
+
+		verify(target, times(1)).trySetAccessible();
+		verify(target, never()).invoke(bean, bus, NeoForge.EVENT_BUS);
+	}
+
+	@Test
 	public void processStatic() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
@@ -177,7 +353,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 
 		when(target.isAnnotationPresent(PostConstruct.class)).thenReturn(true);
 		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
-		when(target.getParameterCount()).thenReturn(2);
+		when(target.getParameterCount()).thenReturn(3);
 
 		TestBean bean = new TestBean();
 		BeanContext.BeanContextInternalInjector context = mock(BeanContext.BeanContextInternalInjector.class);
@@ -185,7 +361,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 
 		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, bean, new AtomicReference<>()));
 
-		assertEquals("@PostConstruct methods must not have parameters or only have one IEventBus parameter", exception.getMessage());
+		assertEquals("@PostConstruct methods must not have parameters or only have one or two IEventBus parameter(s)", exception.getMessage());
 
 		verify(target, times(1)).trySetAccessible();
 		verify(target, never()).invoke(bean);

@@ -12,7 +12,8 @@ import java.lang.annotation.Target;
  * </p>
  * <p>
  * 	Must have no arguments or have a single IEventBus parameter for the Mod EventBus.<br/>
- * 	The parameter can be configured to be the Game EventBus type instead via {@code @PostConstruct(PostConstruct.Bus.GAME)}
+ * 	The parameter can be configured to be the Game EventBus type instead via {@code @PostConstruct(PostConstruct.Bus.GAME)}<br/>
+ * 	If there are two IEventBus parameters then the first type will be what is defined as {@link PostConstruct#value()} and the second will be the alternative.
  * </p>
  * <p>
  * 	Works for {@link Configurable}

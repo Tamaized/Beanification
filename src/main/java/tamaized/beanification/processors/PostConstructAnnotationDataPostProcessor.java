@@ -51,11 +51,14 @@ public class PostConstructAnnotationDataPostProcessor implements AnnotationDataP
 
 					method.trySetAccessible();
 
-					if (method.getParameterCount() == 1 && method.getParameterTypes()[0].equals(IEventBus.class)) {
+					if (method.getParameterCount() == 2 && method.getParameterTypes()[0].equals(IEventBus.class) && method.getParameterTypes()[1].equals(IEventBus.class)) {
+						final boolean isModType = method.getAnnotation(PostConstruct.class).value() == PostConstruct.Bus.MOD;
+						method.invoke(bean, isModType ? modContainer.getEventBus() : NeoForge.EVENT_BUS, isModType ? NeoForge.EVENT_BUS : modContainer.getEventBus());
+					} else if (method.getParameterCount() == 1 && method.getParameterTypes()[0].equals(IEventBus.class)) {
 						method.invoke(bean, method.getAnnotation(PostConstruct.class).value() == PostConstruct.Bus.MOD ? modContainer.getEventBus() : NeoForge.EVENT_BUS);
 					} else {
 						if (method.getParameterCount() != 0) {
-							throw new IllegalStateException("@PostConstruct methods must not have parameters or only have one IEventBus parameter");
+							throw new IllegalStateException("@PostConstruct methods must not have parameters or only have one or two IEventBus parameter(s)");
 						}
 
 						method.invoke(bean);
