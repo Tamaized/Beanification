@@ -16,6 +16,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.util.ObfuscationReflectionHelper;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -302,6 +303,14 @@ public final class BeanContext extends AbstractBeanContext {
 
 	public static <T> T inject(Class<T> type, @Nullable String name) {
 		return INSTANCE.injectInternal(type, name);
+	}
+
+	public static <T> Lazy<T> injectLazy(Class<T> type) {
+		return injectLazy(type, null);
+	}
+
+	public static <T> Lazy<T> injectLazy(Class<T> type, @Nullable String name) {
+		return Lazy.of(() -> INSTANCE.injectInternal(type, name));
 	}
 
 	public final class BeanContextRegistrar {
