@@ -14,6 +14,8 @@ import java.lang.annotation.*;
  *     <li>Registered {@link net.minecraft.client.renderer.entity.EntityRenderer}</li>
  *     <li>Entity objects fired on {@link net.neoforged.neoforge.event.entity.EntityJoinLevelEvent}</li>
  * </ul>
+ *
+ * Supported types can be disabled with {@link BeanContext#configure()} to reduce overhead.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

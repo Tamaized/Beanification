@@ -1,6 +1,7 @@
 package tamaized.beanification;
 
 import org.jetbrains.annotations.ApiStatus;
+import tamaized.beanification.internal.BeanContextConfig;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 
@@ -15,6 +16,7 @@ public class InternalBeanContext extends AbstractBeanContext {
 	static {
 		INSTANCE.registerInternal(DistAnnotationRetriever.class, null, new DistAnnotationRetriever());
 		INSTANCE.registerInternal(InternalReflectionHelper.class, null, new InternalReflectionHelper());
+		INSTANCE.registerInternal(BeanContextConfig.class, null, new BeanContextConfig());
 
 		INSTANCE.freeze();
 	}

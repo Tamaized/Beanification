@@ -72,6 +72,11 @@ import java.beans.beancontext.BeanContext;
 public class YourMod {
 
 	static {
+		// (Optional) Configure the BeanContext, must be called before #init
+		BeanContext.configure()
+			.configurableSettings().disableRenderer()
+			.configurableSettings().disableEntity();
+
 		// General Setup
 		BeanContext.init();
 

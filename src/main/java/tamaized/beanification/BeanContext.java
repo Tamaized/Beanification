@@ -21,6 +21,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tamaized.beanification.internal.BeanContextConfig;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.processors.AnnotationDataPostProcessor;
 import tamaized.beanification.processors.AnnotationDataProcessor;
@@ -50,6 +51,9 @@ public final class BeanContext extends AbstractBeanContext {
 	static BeanContext INSTANCE = new BeanContext();
 
 	@InternalAutowired
+	private BeanContextConfig config;
+
+	@InternalAutowired
 	private DistAnnotationRetriever distAnnotationRetriever;
 
 	private final BeanContextRegistrar beanContextRegistrar = new BeanContextRegistrar();
@@ -58,6 +62,13 @@ public final class BeanContext extends AbstractBeanContext {
 
 	private BeanContext() {
 		InternalBeanContext.injectInto(this);
+	}
+
+	/**
+	 * Must be called before {@link #init()} to have any effect.
+	 */
+	public static BeanContextConfig configure() {
+		return INSTANCE.config;
 	}
 
 	/**
@@ -154,15 +165,19 @@ public final class BeanContext extends AbstractBeanContext {
 			// @Mod
 			modContainer.getEventBus().addListener(ProcessBeanAnnotationsEvent.class, event -> handleProcessBeanAnnotationsEvent(event, modContainer, scanData, annotationDataPostProcessors));
 			// Registries
-			modContainer.getEventBus().addListener(FMLCommonSetupEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
+			if (config.configurableSettings().isRegistryEnabled())
+				modContainer.getEventBus().addListener(FMLCommonSetupEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
 			// Registries (Data Gen)
-			modContainer.getEventBus().addListener(EventPriority.HIGHEST, GatherDataEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
+			if (config.configurableSettings().isRegistryEnabled())
+				modContainer.getEventBus().addListener(EventPriority.HIGHEST, GatherDataEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
 			// Renderers (Entity, BlockEntity)
-			modContainer.getEventBus().addListener(EventPriority.LOWEST, RegisterClientReloadListenersEvent.class,
-				event -> event.registerReloadListener((ResourceManagerReloadListener) manager -> injectRenderers(modContainer, scanData, annotationDataPostProcessors))
-			);
+			if (config.configurableSettings().isRendererEnabled())
+				modContainer.getEventBus().addListener(EventPriority.LOWEST, RegisterClientReloadListenersEvent.class,
+					event -> event.registerReloadListener((ResourceManagerReloadListener) manager -> injectRenderers(modContainer, scanData, annotationDataPostProcessors))
+				);
 			// Entities
-			NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, EntityJoinLevelEvent.class, event -> injectEntity(event, modContainer, scanData, annotationDataPostProcessors));
+			if (config.configurableSettings().isEntityEnabled())
+				NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, EntityJoinLevelEvent.class, event -> injectEntity(event, modContainer, scanData, annotationDataPostProcessors));
 
 			if (forceInjectRegistries)
 				injectRegistries(modContainer, scanData, annotationDataPostProcessors);
