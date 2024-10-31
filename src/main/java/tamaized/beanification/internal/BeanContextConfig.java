@@ -1,8 +1,5 @@
 package tamaized.beanification.internal;
 
-import org.jetbrains.annotations.ApiStatus;
-
-@ApiStatus.Internal
 public class BeanContextConfig {
 
 	private final ConfigurableSettings configurableSettings = new ConfigurableSettings();
