@@ -12,6 +12,7 @@ import java.lang.annotation.*;
  *     <li>Registry Objects</li>
  *     <li>Registered {@link net.minecraft.client.renderer.blockentity.BlockEntityRenderer}</li>
  *     <li>Registered {@link net.minecraft.client.renderer.entity.EntityRenderer}</li>
+ *     <li>Entity objects fired on {@link net.neoforged.neoforge.event.entity.EntityJoinLevelEvent}</li>
  * </ul>
  */
 @Target(ElementType.TYPE)

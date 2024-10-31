@@ -11,14 +11,13 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.util.ObfuscationReflectionHelper;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -95,8 +94,13 @@ public final class BeanContext extends AbstractBeanContext {
 			context.accept(beanContextRegistrar);
 
 		ModContainer modContainer = ModLoadingContext.get().getActiveContainer();
+
+		if (modContainer.getEventBus() == null)
+			throw new RuntimeException("Mod EventBus is null");
+
 		ModFileScanData scanData = modContainer.getModInfo().getOwningFile().getFile().getScanResult();
 		AtomicReference<Object> currentInjection = new AtomicReference<>();
+
 		try {
 			LOGGER.debug("Registering Bean annotation processors");
 			List<AnnotationDataProcessor> annotationDataProcessors = new ArrayList<>();
@@ -148,15 +152,17 @@ public final class BeanContext extends AbstractBeanContext {
 			currentInjection.set(null);
 
 			// @Mod
-			Objects.requireNonNull(modContainer.getEventBus()).addListener(ProcessBeanAnnotationsEvent.class, event -> handleProcessBeanAnnotationsEvent(event, modContainer, scanData, annotationDataPostProcessors));
+			modContainer.getEventBus().addListener(ProcessBeanAnnotationsEvent.class, event -> handleProcessBeanAnnotationsEvent(event, modContainer, scanData, annotationDataPostProcessors));
 			// Registries
-			Objects.requireNonNull(modContainer.getEventBus()).addListener(FMLCommonSetupEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
+			modContainer.getEventBus().addListener(FMLCommonSetupEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
 			// Registries (Data Gen)
-			Objects.requireNonNull(modContainer.getEventBus()).addListener(EventPriority.HIGHEST, GatherDataEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
+			modContainer.getEventBus().addListener(EventPriority.HIGHEST, GatherDataEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
 			// Renderers (Entity, BlockEntity)
-			Objects.requireNonNull(modContainer.getEventBus()).addListener(EventPriority.LOWEST, RegisterClientReloadListenersEvent.class,
+			modContainer.getEventBus().addListener(EventPriority.LOWEST, RegisterClientReloadListenersEvent.class,
 				event -> event.registerReloadListener((ResourceManagerReloadListener) manager -> injectRenderers(modContainer, scanData, annotationDataPostProcessors))
 			);
+			// Entities
+			NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, EntityJoinLevelEvent.class, event -> injectEntity(event, modContainer, scanData, annotationDataPostProcessors));
 
 			if (forceInjectRegistries)
 				injectRegistries(modContainer, scanData, annotationDataPostProcessors);
@@ -252,6 +258,17 @@ public final class BeanContext extends AbstractBeanContext {
 			throw new RuntimeException(e);
 		}
 		LOGGER.debug("Finished processing renderer objects in {} ms", System.currentTimeMillis() - ms);
+	}
+
+	private void injectEntity(EntityJoinLevelEvent event, ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors) {
+		AtomicReference<Object> curInj = new AtomicReference<>();
+		try {
+			if (classOrSuperHasAnnotation(event.getEntity().getClass(), Configurable.class)) {
+				runAnnotationDataPostProcessors(event.getEntity(), modContainer, scanData, annotationDataPostProcessors, curInj);
+			}
+		} catch (Throwable e) {
+			throwInjectionFailedException(curInj, e);
+		}
 	}
 
 	private boolean classOrSuperHasAnnotation(Class<?> c, Class<? extends Annotation> a) {
