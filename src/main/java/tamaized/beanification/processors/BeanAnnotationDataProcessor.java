@@ -25,6 +25,7 @@ public class BeanAnnotationDataProcessor implements AnnotationDataProcessor {
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
 			Method method = internalReflectionHelper.getDeclaredMethod(Class.forName(data.clazz().getClassName()), data.memberName());
+			method.trySetAccessible();
 			if (!internalReflectionHelper.isStatic(method))
 				throw new IllegalStateException("@Bean methods must be static");
 			Bean annotation = method.getAnnotation(Bean.class);

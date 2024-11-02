@@ -89,6 +89,7 @@ public class BeanAnnotationDataProcessorTests {
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
+		verify(target,times(1)).trySetAccessible();
 		verify(context, times(1)).register(TestBean.class, "test", beanInstance);
 	}
 
@@ -116,6 +117,7 @@ public class BeanAnnotationDataProcessorTests {
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
+		verify(target, never()).trySetAccessible();
 		verify(context, never()).register(TestBean.class, null, beanInstance);
 	}
 
@@ -147,6 +149,7 @@ public class BeanAnnotationDataProcessorTests {
 
 		assertEquals("@Bean methods must be static", exception.getMessage());
 
+		verify(target, times(1)).trySetAccessible();
 		verify(context, never()).register(TestBean.class, null, beanInstance);
 	}
 
