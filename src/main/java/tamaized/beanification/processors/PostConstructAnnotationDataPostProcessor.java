@@ -29,7 +29,7 @@ public class PostConstructAnnotationDataPostProcessor implements AnnotationDataP
 	@Override
 	public void process(BeanContext.BeanContextInternalInjector context, ModContainer modContainer, ModFileScanData scanData, Object bean, AtomicReference<Object> currentInjectionTarget) throws Throwable {
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class).filter(a -> a.clazz().equals(internalReflectionHelper.getType(bean.getClass()))).iterator(); it.hasNext(); ) {
-			String name = it.next().memberName().split("\\(")[0];
+			String name = it.next().memberName();
 			List<Method> methods = new ArrayList<>();
 			try {
 				methods.add(internalReflectionHelper.getDeclaredMethod(bean.getClass(), name));

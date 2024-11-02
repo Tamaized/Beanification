@@ -65,7 +65,7 @@ public class InternalReflectionHelper {
 	}
 
 	public Method getDeclaredMethod(Class<?> clazz, String name, @Nullable Class<?>... args) throws NoSuchMethodException {
-		return clazz.getDeclaredMethod(name, args);
+		return clazz.getDeclaredMethod(name.split("\\(")[0], args);
 	}
 
 	public Type getType(Class<?> c) {

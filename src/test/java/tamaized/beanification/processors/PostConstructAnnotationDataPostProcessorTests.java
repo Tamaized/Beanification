@@ -44,7 +44,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processNoArgs() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(V)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -71,7 +71,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processEventBusArg() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -105,7 +105,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processEventBusArgGame() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -137,7 +137,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processEventBusArgWrongType() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -173,7 +173,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processEventBusTwoArg() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -207,7 +207,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processEventBusTwoArgGame() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -241,7 +241,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processEventBusTwoArgWrongTypeFirstArg() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -277,7 +277,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processEventBusTwoArgWrongTypeSecondArg() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(LIEventBus;)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -313,7 +313,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processStatic() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(V)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
@@ -342,7 +342,7 @@ public class PostConstructAnnotationDataPostProcessorTests {
 	public void processTooManyArgs() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method(V)V", new HashMap<>())
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
 		));
 
 		when(internalReflectionHelper.getType(TestBean.class)).thenCallRealMethod();
