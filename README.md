@@ -82,8 +82,8 @@ public class YourMod {
 
 		// This overload can be used instead to register beans directly
 		BeanContext.init(context -> {
-			context.register(YourComponent.class, YourComponent::new);
-			context.register(YourComponent.class, "someName", YourExtendedComponent::new);
+			context.register(YourComponent.class, new YourComponent());
+			context.register(YourComponent.class, "someName", new YourExtendedComponent());
 		});
 	}
 
