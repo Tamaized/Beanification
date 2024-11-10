@@ -220,6 +220,7 @@ public final class BeanContext extends AbstractBeanContext {
 			try {
 				Object o = holder.value();
 				if (classOrSuperHasAnnotation(o.getClass(), Configurable.class)) {
+					LOGGER.debug("Processing {}", o);
 					runAnnotationDataPostProcessors(o, modContainer, scanData, annotationDataPostProcessors, curInj);
 				}
 			} catch (Throwable e) {
