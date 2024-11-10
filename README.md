@@ -51,7 +51,7 @@ dependencies {
 	implementation beanification
 	shade beanification
 	testImplementation "${beanification}:tests"
-	compileOnly "${beanification}:test-sources"
+	testCompileOnly "${beanification}:test-sources"
 }
 
 ...
