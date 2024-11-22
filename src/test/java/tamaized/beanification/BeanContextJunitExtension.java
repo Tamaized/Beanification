@@ -31,7 +31,7 @@ public class BeanContextJunitExtension implements BeforeAllCallback, AfterAllCal
 	@Nullable
 	private BeanContext beanContextInstance;
 
-	private final Map<BeanContext.BeanDefinition<?>, Object> mockedBeans = new HashMap<>();
+	private final Map<BeanDefinition<?>, Object> mockedBeans = new HashMap<>();
 
 	private <T> T mockBean(Class<T> type) {
 		return mockBean(type, null);
@@ -68,7 +68,7 @@ public class BeanContextJunitExtension implements BeforeAllCallback, AfterAllCal
 			if (field.get(testInstance) == null) {
 				String name = field.getAnnotation(MockBean.class).value();
 				field.set(testInstance, mockedBeans.computeIfAbsent(
-					new BeanContext.BeanDefinition<>(field.getType(), name),
+					new BeanDefinition<>(field.getType(), name),
 					k -> name.equals(MockBean.DEFAULT_VALUE) ? mockBean(field.getType()) : mockBean(field.getType(), name)
 				));
 			}

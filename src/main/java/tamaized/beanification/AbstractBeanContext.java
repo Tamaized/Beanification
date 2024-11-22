@@ -11,10 +11,10 @@ import java.util.Objects;
 @ApiStatus.Internal
 abstract class AbstractBeanContext {
 
-	private Map<BeanContext.BeanDefinition<?>, Object> BEANS = new HashMap<>();
+	private Map<BeanDefinition<?>, Object> BEANS = new HashMap<>();
 	private boolean frozen = false;
 
-	Map<AbstractBeanContext.BeanDefinition<?>, Object> getBeans() {
+	Map<BeanDefinition<?>, Object> getBeans() {
 		return BEANS;
 	}
 
@@ -30,7 +30,7 @@ abstract class AbstractBeanContext {
 	protected void registerInternal(Class<?> type, @Nullable String name, Object instance) {
 		if (frozen)
 			throw new IllegalStateException("Bean Context already frozen");
-		BeanContext.BeanDefinition<?> beanDefinition = new BeanContext.BeanDefinition<>(type, name);
+		BeanDefinition<?> beanDefinition = new BeanDefinition<>(type, name);
 		if (BEANS.containsKey(beanDefinition)) {
 			final StringBuilder error = new StringBuilder("Class: ").append(type);
 			if (name != null) {
@@ -44,20 +44,7 @@ abstract class AbstractBeanContext {
 	<T> T injectInternal(Class<T> type, @Nullable String name) {
 		if (!frozen)
 			throw new IllegalStateException("Bean Context has not been initialized yet");
-		return type.cast(Objects.requireNonNull(BEANS.get(new BeanContext.BeanDefinition<>(type, name)), "Trying to inject Bean: " + type + (name == null ? "" : " (" + name + ")")));
-	}
-
-	record BeanDefinition<T>(Class<T> type, @Nullable String name) {
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(type, name);
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			return o instanceof BeanDefinition<?> other && type.equals(other.type()) && Objects.equals(name, other.name);
-		}
+		return type.cast(Objects.requireNonNull(BEANS.get(new BeanDefinition<>(type, name)), "Trying to inject Bean: " + type + (name == null ? "" : " (" + name + ")")));
 	}
 
 }
