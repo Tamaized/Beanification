@@ -369,7 +369,7 @@ public final class BeanContext extends AbstractBeanContext {
 		}
 
 		public List<BeanDefinition<?>> getDependencies(Class<?> type, @Nullable String name) {
-			return BeanContext.this.beanDependencies.get(new BeanDefinition<>(type, name));
+			return BeanContext.this.beanDependencies.getOrDefault(new BeanDefinition<>(type, name), new ArrayList<>());
 		}
 
 		public Object getUnfrozenBean(BeanDefinition<?> definition) {
