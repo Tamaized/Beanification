@@ -3,7 +3,7 @@ package tamaized.beanification;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-record BeanDefinition<T>(Class<T> type, @Nullable String name) {
+public record BeanDefinition<T>(Class<T> type, @Nullable String name) {
 
 	@Override
 	public int hashCode() {

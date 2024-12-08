@@ -1,4 +1,4 @@
-package tamaized.beanification.processors;
+package tamaized.beanification.processors.post;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -9,6 +9,8 @@ import tamaized.beanification.InternalAutowired;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.PostConstruct;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.processors.AnnotationDataPostProcessor;
+import tamaized.beanification.processors.BeanProcessor;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;

@@ -1,4 +1,4 @@
-package tamaized.beanification.processors;
+package tamaized.beanification.processors.interim;
 
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;

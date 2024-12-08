@@ -1,4 +1,4 @@
-package tamaized.beanification.processors;
+package tamaized.beanification.processors.post;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -10,7 +10,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.objectweb.asm.Type;
 import tamaized.beanification.BeanContext;
-import tamaized.beanification.Component;
 import tamaized.beanification.PostConstruct;
 import tamaized.beanification.TestBean;
 import tamaized.beanification.internal.DistAnnotationRetriever;

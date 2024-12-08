@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 import tamaized.beanification.internal.BeanContextConfig;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.processors.AnnotationDataPostProcessor;
+import tamaized.beanification.processors.AnnotationDataPreProcessor;
 import tamaized.beanification.processors.AnnotationDataProcessor;
 import tamaized.beanification.processors.BeanProcessor;
 
@@ -57,7 +58,10 @@ public final class BeanContext extends AbstractBeanContext {
 	@InternalAutowired
 	private DistAnnotationRetriever distAnnotationRetriever;
 
+	private final Map<BeanDefinition<?>, List<BeanDefinition<?>>> beanDependencies = new HashMap<>();
+
 	private final BeanContextRegistrar beanContextRegistrar = new BeanContextRegistrar();
+	private final BeanContextInternalDependencyTreeAccumulator beanContextInternalDependencyTreeAccumulator = new BeanContextInternalDependencyTreeAccumulator();
 	private final BeanContextInternalRegistrar beanContextInternalRegistrar = new BeanContextInternalRegistrar();
 	private final BeanContextInternalInjector beanContextInternalInjector = new BeanContextInternalInjector();
 
@@ -115,6 +119,7 @@ public final class BeanContext extends AbstractBeanContext {
 
 		try {
 			LOGGER.debug("Registering Bean annotation processors");
+			List<AnnotationDataPreProcessor> annotationDataPreProcessors = new ArrayList<>();
 			List<AnnotationDataProcessor> annotationDataProcessors = new ArrayList<>();
 			List<AnnotationDataPostProcessor> annotationDataPostProcessors = new ArrayList<>();
 
@@ -129,7 +134,10 @@ public final class BeanContext extends AbstractBeanContext {
 				.sorted(Comparator.comparingInt(c -> c.getAnnotation(BeanProcessor.class).priority()))
 				.iterator(); it.hasNext(); ) {
 				Class<?> c = it.next();
-				if (AnnotationDataProcessor.class.isAssignableFrom(c)) {
+				if (AnnotationDataPreProcessor.class.isAssignableFrom(c)) {
+					annotationDataPreProcessors.add((AnnotationDataPreProcessor) c.getConstructor().newInstance());
+					LOGGER.debug("Registered Bean annotation pre processor: {}", c);
+				} else if (AnnotationDataProcessor.class.isAssignableFrom(c)) {
 					annotationDataProcessors.add((AnnotationDataProcessor) c.getConstructor().newInstance());
 					LOGGER.debug("Registered Bean annotation processor: {}", c);
 				} else if (AnnotationDataPostProcessor.class.isAssignableFrom(c)) {
@@ -138,14 +146,21 @@ public final class BeanContext extends AbstractBeanContext {
 				}
 			}
 
+			annotationDataPreProcessors.forEach(InternalBeanContext::injectInto);
 			annotationDataProcessors.forEach(InternalBeanContext::injectInto);
 			annotationDataPostProcessors.forEach(InternalBeanContext::injectInto);
+
+			for (AnnotationDataPreProcessor annotationDataPreProcessor : annotationDataPreProcessors) {
+				LOGGER.debug("Running pre processor {}", annotationDataPreProcessor.getClass());
+				annotationDataPreProcessor.process(beanContextInternalDependencyTreeAccumulator, modContainer, scanData);
+			}
 
 			for (AnnotationDataProcessor annotationDataProcessor : annotationDataProcessors) {
 				LOGGER.debug("Running processor {}", annotationDataProcessor.getClass());
 				annotationDataProcessor.process(beanContextInternalRegistrar, modContainer, scanData);
 			}
 
+			beanDependencies.clear();
 			freeze();
 
 			for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
@@ -331,10 +346,34 @@ public final class BeanContext extends AbstractBeanContext {
 
 	}
 
+	public final class BeanContextInternalDependencyTreeAccumulator {
+
+		private BeanContextInternalDependencyTreeAccumulator() {
+
+		}
+
+		public void addDependency(Class<?> type, @Nullable String name, Class<?> depType, @Nullable String depName) {
+			LOGGER.info("Bean ({}{}) depends on ({}{})", type, name == null ? "" : ":".concat(name), depType, depName == null ? "" : ":".concat(depName));
+			BeanDefinition<?> key = new BeanDefinition<>(type, name);
+			List<BeanDefinition<?>> deps = BeanContext.this.beanDependencies.getOrDefault(key, new ArrayList<>());
+			deps.add(new BeanDefinition<>(depType, depName));
+			BeanContext.this.beanDependencies.put(key, deps);
+		}
+
+	}
+
 	public final class BeanContextInternalRegistrar {
 
 		private BeanContextInternalRegistrar() {
 
+		}
+
+		public List<BeanDefinition<?>> getDependencies(Class<?> type, @Nullable String name) {
+			return BeanContext.this.beanDependencies.get(new BeanDefinition<>(type, name));
+		}
+
+		public Object getUnfrozenBean(BeanDefinition<?> definition) {
+			return BeanContext.this.getBeans().get(definition);
 		}
 
 		public void register(Class<?> type, @Nullable String name, Object instance) {

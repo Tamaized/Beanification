@@ -1,10 +1,12 @@
-package tamaized.beanification.processors;
+package tamaized.beanification.processors.interim;
 
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.processors.AnnotationDataProcessor;
+import tamaized.beanification.processors.BeanProcessor;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;

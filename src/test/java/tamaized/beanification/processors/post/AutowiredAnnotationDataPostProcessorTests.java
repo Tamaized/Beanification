@@ -1,4 +1,4 @@
-package tamaized.beanification.processors;
+package tamaized.beanification.processors.post;
 
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;

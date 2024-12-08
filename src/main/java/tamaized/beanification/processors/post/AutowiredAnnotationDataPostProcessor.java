@@ -1,4 +1,4 @@
-package tamaized.beanification.processors;
+package tamaized.beanification.processors.post;
 
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -6,6 +6,8 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.processors.AnnotationDataPostProcessor;
+import tamaized.beanification.processors.BeanProcessor;
 
 import javax.annotation.Nullable;
 import java.lang.annotation.ElementType;

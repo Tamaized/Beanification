@@ -6,9 +6,7 @@ import org.objectweb.asm.Type;
 import tamaized.beanification.Autowired;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -70,6 +68,30 @@ public class InternalReflectionHelper {
 
 	public Type getType(Class<?> c) {
 		return Type.getType(c);
+	}
+
+	public Constructor<?>[] getConstructors(Class<?> c) {
+		return c.getConstructors();
+	}
+
+	public Constructor<?> getConstructor(Class<?> c, Class<?>... p) throws NoSuchMethodException {
+		return c.getConstructor(p);
+	}
+
+	public boolean allParametersHaveAnnotation(Annotation[][] parameterAnnotations, Class<? extends Annotation> annotationClass) {
+		for (Annotation[] annotations : parameterAnnotations) {
+			boolean hasAnnotation = false;
+			for (Annotation annotation : annotations) {
+				if (annotation.annotationType().equals(annotationClass)) {
+					hasAnnotation = true;
+					break;
+				}
+			}
+			if (!hasAnnotation) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }
