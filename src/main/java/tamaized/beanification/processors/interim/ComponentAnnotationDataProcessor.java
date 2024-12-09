@@ -72,7 +72,7 @@ public class ComponentAnnotationDataProcessor implements AnnotationDataProcessor
 		List<BeanDefinition<?>> chain = new ArrayList<>();
 		chain.add(new BeanDefinition<>(parentType, parentName));
 		if (chain.contains(dep)) {
-			throw new CircularDependencyException();
+			throw new CircularDependencyException(chain.toString());
 		}
 		stepDownAndCheckCircularDep(chain, context, dep);
 	}
@@ -81,7 +81,7 @@ public class ComponentAnnotationDataProcessor implements AnnotationDataProcessor
 		chain.add(dep);
 		context.getDependencies(dep.type(), dep.name()).forEach(child -> {
 			if (chain.contains(child))
-				throw new CircularDependencyException();
+				throw new CircularDependencyException(chain.toString());
 			stepDownAndCheckCircularDep(new ArrayList<>(chain), context, child);
 		});
 	}
