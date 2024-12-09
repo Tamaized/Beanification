@@ -52,7 +52,7 @@ public class ComponentAnnotationDataPreProcessor implements AnnotationDataPrePro
 			}
 
 			if (targetConstructor == null) {
-				throw new IllegalArgumentException("Could not find valid constructor");
+				throw new IllegalArgumentException("Could not find valid constructor for " + c);
 			}
 
 			if (hasAutowiredCtor) {
