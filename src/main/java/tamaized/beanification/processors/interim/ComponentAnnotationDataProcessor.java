@@ -72,7 +72,7 @@ public class ComponentAnnotationDataProcessor implements AnnotationDataProcessor
 		List<BeanDefinition<?>> chain = new ArrayList<>();
 		chain.add(new BeanDefinition<>(parentType, parentName));
 		if (chain.contains(dep)) {
-			throw new CircularDependencyException(chain.toString());
+			throw new CircularDependencyException(printCircularError(chain, dep));
 		}
 		stepDownAndCheckCircularDep(chain, context, dep);
 	}
@@ -81,9 +81,25 @@ public class ComponentAnnotationDataProcessor implements AnnotationDataProcessor
 		chain.add(dep);
 		context.getDependencies(dep.type(), dep.name()).forEach(child -> {
 			if (chain.contains(child))
-				throw new CircularDependencyException(chain.toString());
+				throw new CircularDependencyException(printCircularError(chain, child));
 			stepDownAndCheckCircularDep(new ArrayList<>(chain), context, child);
 		});
+	}
+
+	private String printCircularError(List<BeanDefinition<?>> chain, BeanDefinition<?> dep) {
+		BeanDefinition<?> parent = chain.getFirst();
+		StringBuilder builder = new StringBuilder("Constructing: ").append(parent.type());
+		if (parent.name() != null)
+			builder.append("@").append(parent.name());
+		chain.stream().skip(1).forEach(e -> {
+			builder.append("\n").append("Chain: ").append(e.type());
+			if (e.name() != null)
+				builder.append("@").append(e.name());
+		});
+		builder.append("\n").append("Dependency: ").append(dep.type());
+		if (dep.name() != null)
+			builder.append("@").append(dep.name());
+		return builder.toString();
 	}
 
 }
