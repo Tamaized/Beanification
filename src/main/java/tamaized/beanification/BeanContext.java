@@ -65,6 +65,9 @@ public final class BeanContext extends AbstractBeanContext {
 	private final BeanContextInternalRegistrar beanContextInternalRegistrar = new BeanContextInternalRegistrar();
 	private final BeanContextInternalInjector beanContextInternalInjector = new BeanContextInternalInjector();
 
+	@Nullable
+	private ContainerContext currentContainerContext = null;
+
 	private BeanContext() {
 		InternalBeanContext.injectInto(this);
 	}
@@ -91,8 +94,11 @@ public final class BeanContext extends AbstractBeanContext {
 	}
 
 	/**
-	 * Invoke in your {@link net.neoforged.fml.common.Mod} constructor to enable non-static {@link Autowired} in the class
+	 * <strike>Invoke in your {@link net.neoforged.fml.common.Mod} constructor to enable non-static {@link Autowired} in the class</strike>
+	 * <p>
+	 * Use {@link tamaized.beanification.BeanContext#injectInto(Object)}
 	 */
+	@Deprecated(forRemoval = true, since = "1.2.X")
 	public static void enableMainModClassInjections(Object mod) {
 		Objects.requireNonNull(ModLoadingContext.get().getActiveContainer().getEventBus()).post(new ProcessBeanAnnotationsEvent(mod));
 	}
@@ -179,25 +185,27 @@ public final class BeanContext extends AbstractBeanContext {
 
 			currentInjection.set(null);
 
+			currentContainerContext = new ContainerContext(modContainer, scanData, annotationDataPreProcessors, annotationDataProcessors, annotationDataPostProcessors);
+
 			// @Mod
 			modContainer.getEventBus().addListener(ProcessBeanAnnotationsEvent.class, event -> handleProcessBeanAnnotationsEvent(event, modContainer, scanData, annotationDataPostProcessors));
 			// Registries
 			if (config.configurableSettings().isRegistryEnabled())
-				modContainer.getEventBus().addListener(FMLCommonSetupEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
+				modContainer.getEventBus().addListener(FMLCommonSetupEvent.class, event -> injectRegistries());
 			// Registries (Data Gen)
 			if (config.configurableSettings().isRegistryEnabled())
-				modContainer.getEventBus().addListener(EventPriority.HIGHEST, GatherDataEvent.class, event -> injectRegistries(modContainer, scanData, annotationDataPostProcessors));
+				modContainer.getEventBus().addListener(EventPriority.HIGHEST, GatherDataEvent.class, event -> injectRegistries());
 			// Renderers (Entity, BlockEntity)
 			if (config.configurableSettings().isRendererEnabled())
 				modContainer.getEventBus().addListener(EventPriority.LOWEST, RegisterClientReloadListenersEvent.class,
-					event -> event.registerReloadListener((ResourceManagerReloadListener) manager -> injectRenderers(modContainer, scanData, annotationDataPostProcessors))
+					event -> event.registerReloadListener((ResourceManagerReloadListener) manager -> injectRenderers())
 				);
 			// Entities
 			if (config.configurableSettings().isEntityEnabled())
-				NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, EntityJoinLevelEvent.class, event -> injectEntity(event, modContainer, scanData, annotationDataPostProcessors));
+				NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, EntityJoinLevelEvent.class, this::injectEntity);
 
 			if (forceInjectRegistries)
-				injectRegistries(modContainer, scanData, annotationDataPostProcessors);
+				injectRegistries();
 
 			LOGGER.info("Bean Context loaded in {} ms", System.currentTimeMillis() - ms);
 		} catch (Throwable e) {
@@ -209,25 +217,53 @@ public final class BeanContext extends AbstractBeanContext {
 		throw new RuntimeException("Bean injection failed." + (o.get() == null ? "" : (" At: " + o)), e);
 	}
 
-	private void runAnnotationDataPostProcessors(Object o, ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors, AtomicReference<Object> curInj) throws Throwable {
-		for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
-			annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, o, curInj);
+	private void runAnnotationDataPostProcessors(Object o, AtomicReference<Object> curInj) throws Throwable {
+		Objects.requireNonNull(currentContainerContext);
+		for (AnnotationDataPostProcessor annotationDataPostProcessor : currentContainerContext.annotationDataPostProcessors) {
+			annotationDataPostProcessor.process(beanContextInternalInjector, currentContainerContext.container, currentContainerContext.scanData, o, curInj);
 		}
 	}
 
+	/**
+	 * Use {@link #injectInto(Object)}
+	 */
+	@Deprecated(forRemoval = true, since = "1.2.X")
 	private void handleProcessBeanAnnotationsEvent(ProcessBeanAnnotationsEvent event, ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors) {
 		final long ms = System.currentTimeMillis();
 		LOGGER.debug("Processing {}", event.getObjectToProcess());
 		AtomicReference<Object> curInj = new AtomicReference<>();
 		try {
-			runAnnotationDataPostProcessors(event.getObjectToProcess(), modContainer, scanData, annotationDataPostProcessors, curInj);
+			runAnnotationDataPostProcessors(event.getObjectToProcess(), curInj);
 		} catch (Throwable e) {
 			throwInjectionFailedException(curInj, e);
 		}
 		LOGGER.debug("Finished processing {} in {} ms", event.getObjectToProcess(), System.currentTimeMillis() - ms);
 	}
 
-	private void injectRegistries(ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors) {
+	/**
+	 * May be called in an object's Constructor to enable non-static {@link Autowired} annotations
+	 */
+	public static void injectInto(Object object) {
+		final long ms = System.currentTimeMillis();
+		LOGGER.debug("Processing {}", object);
+		AtomicReference<Object> curInj = new AtomicReference<>();
+		try {
+			ContainerContext context = INSTANCE.currentContainerContext;
+			if (context == null) {
+				throw new IllegalStateException("BeanContext.init() must be ran first before calling BeanContext.injectInto(obj)");
+			}
+			INSTANCE.runAnnotationDataPostProcessors(object, curInj);
+		} catch (Throwable e) {
+			INSTANCE.throwInjectionFailedException(curInj, e);
+		}
+		LOGGER.debug("Finished processing {} in {} ms", object, System.currentTimeMillis() - ms);
+	}
+
+	/**
+	 * Use {@link #injectInto(Object)}
+	 */
+	@Deprecated(forRemoval = true, since = "1.2.X")
+	private void injectRegistries() {
 		final long ms = System.currentTimeMillis();
 		LOGGER.debug("Processing registry objects");
 		AtomicReference<Object> curInj = new AtomicReference<>();
@@ -236,7 +272,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Object o = holder.value();
 				if (classOrSuperHasAnnotation(o.getClass(), Configurable.class)) {
 					LOGGER.debug("Processing {}", o);
-					runAnnotationDataPostProcessors(o, modContainer, scanData, annotationDataPostProcessors, curInj);
+					runAnnotationDataPostProcessors(o, curInj);
 				}
 			} catch (Throwable e) {
 				throwInjectionFailedException(curInj, e);
@@ -245,8 +281,12 @@ public final class BeanContext extends AbstractBeanContext {
 		LOGGER.debug("Finished processing registry objects in {} ms", System.currentTimeMillis() - ms);
 	}
 
+	/**
+	 * Use {@link #injectInto(Object)}
+	 */
+	@Deprecated(forRemoval = true, since = "1.2.X")
 	@SuppressWarnings("unchecked")
-	void injectRenderers(ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors) {
+	void injectRenderers() {
 		final long ms = System.currentTimeMillis();
 		LOGGER.debug("Processing renderer objects");
 		AtomicReference<Object> curInj = new AtomicReference<>();
@@ -280,7 +320,7 @@ public final class BeanContext extends AbstractBeanContext {
 			).forEach(renderer -> {
 				try {
 					if (classOrSuperHasAnnotation(renderer.getClass(), Configurable.class)) {
-						runAnnotationDataPostProcessors(renderer, modContainer, scanData, annotationDataPostProcessors, curInj);
+						runAnnotationDataPostProcessors(renderer, curInj);
 					}
 				} catch (Throwable e) {
 					throwInjectionFailedException(curInj, e);
@@ -293,11 +333,15 @@ public final class BeanContext extends AbstractBeanContext {
 		LOGGER.debug("Finished processing renderer objects in {} ms", System.currentTimeMillis() - ms);
 	}
 
-	private void injectEntity(EntityJoinLevelEvent event, ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors) {
+	/**
+	 * Use {@link #injectInto(Object)}
+	 */
+	@Deprecated(forRemoval = true, since = "1.2.X")
+	private void injectEntity(EntityJoinLevelEvent event) {
 		AtomicReference<Object> curInj = new AtomicReference<>();
 		try {
 			if (classOrSuperHasAnnotation(event.getEntity().getClass(), Configurable.class)) {
-				runAnnotationDataPostProcessors(event.getEntity(), modContainer, scanData, annotationDataPostProcessors, curInj);
+				runAnnotationDataPostProcessors(event.getEntity(), curInj);
 			}
 		} catch (Throwable e) {
 			throwInjectionFailedException(curInj, e);
@@ -395,6 +439,16 @@ public final class BeanContext extends AbstractBeanContext {
 		public boolean contains(Class<?> type, @Nullable String name) {
 			return BeanContext.this.getBeans().containsKey(new BeanDefinition<>(type, name));
 		}
+
+	}
+
+	private record ContainerContext(
+		ModContainer container,
+		ModFileScanData scanData,
+		List<AnnotationDataPreProcessor> annotationDataPreProcessors,
+		List<AnnotationDataProcessor> annotationDataProcessors,
+		List<AnnotationDataPostProcessor> annotationDataPostProcessors
+	) {
 
 	}
 

@@ -17,7 +17,6 @@ import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.junit.TestConstants;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -69,12 +68,9 @@ public class BeanContextTests {
 		when(minecraft.getEntityRenderDispatcher()).thenReturn(entityRenderDispatcher);
 		when(minecraft.getBlockEntityRenderDispatcher()).thenReturn(blockEntityRenderDispatcher);
 
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-
 		try (MockedStatic<Minecraft> minecraftMockedStatic = mockStatic(Minecraft.class)) {
 			minecraftMockedStatic.when(Minecraft::getInstance).thenReturn(minecraft);
-			assertDoesNotThrow(() -> instance.injectRenderers(modContainer, scanData, new ArrayList<>()));
+			assertDoesNotThrow(() -> instance.injectRenderers());
 		}
 	}
 

@@ -45,17 +45,10 @@ public class AutowiredAnnotationDataPostProcessor implements AnnotationDataPostP
 
 	@Override
 	public void process(BeanContext.BeanContextInternalInjector context, ModContainer modContainer, ModFileScanData scanData, AtomicReference<Object> currentInjectionTarget) throws Throwable {
-		List<String> ignoredClasses = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Configurable.class, Component.class, Mod.class)
-			.map(d -> d.clazz().getClassName())
-			.toList();
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
 			currentInjectionTarget.set(data.clazz());
-			if (ignoredClasses.contains(data.clazz().getClassName()))
-				continue;
 			Class<?> type = Class.forName(data.clazz().getClassName());
-			if (internalReflectionHelper.isAnyAnnotationPresent(type, Configurable.class, Component.class, Mod.class))
-				continue;
 			Field field = internalReflectionHelper.getDeclaredField(type, data.memberName());
 			currentInjectionTarget.set(field);
 			Autowired annotation = field.getAnnotation(Autowired.class);
@@ -63,8 +56,6 @@ public class AutowiredAnnotationDataPostProcessor implements AnnotationDataPostP
 			if (internalReflectionHelper.isStatic(field)) {
 				field.trySetAccessible();
 				field.set(null, context.inject(field.getType(), name));
-			} else if (!context.contains(type, name)) {
-				throw new IllegalStateException("@Autowired fields must be static outside of Beans");
 			}
 		}
 	}

@@ -8,6 +8,10 @@ public class BeanContextConfig {
 		return configurableSettings;
 	}
 
+	/**
+	 * Use {@link tamaized.beanification.BeanContext#injectInto(Object)}
+	 */
+	@Deprecated(forRemoval = true, since = "1.2.X")
 	public class ConfigurableSettings {
 
 		private boolean registry = true;
