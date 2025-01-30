@@ -8,8 +8,9 @@ class BeanificationPlugin implements Plugin<Project> {
 
 	@Override
 	void apply(Project project) {
-		project.tasks.register("beanificationTransformClasses") {
+		def task = project.tasks.register("beanificationTransformClasses") {
 			it.dependsOn 'classes'
+			it.mustRunAfter 'classes'
 
 			def workDir = project.layout.buildDirectory.dir("classes/java/main")
 
@@ -20,6 +21,10 @@ class BeanificationPlugin implements Plugin<Project> {
 					CompileTimeTransformer.processClassFile(file)
 				}
 			}
+		}
+		def classesTask = project.tasks.named('classes')
+		project.afterEvaluate {
+			classesTask.get().finalizedBy(task)
 		}
 	}
 
