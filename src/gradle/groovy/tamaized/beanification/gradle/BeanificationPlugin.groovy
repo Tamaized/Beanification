@@ -23,7 +23,7 @@ class BeanificationPlugin implements Plugin<Project> {
 			it.dependsOn copyTask
 
 			it.doLast {
-				instrumentedDir.get().asFileTree.forEach { file ->
+				instrumentedDir.get().asFileTree.each { file ->
 					logger.info(file.name)
 				}
 				instrumentedDir.get().asFileTree.matching {
