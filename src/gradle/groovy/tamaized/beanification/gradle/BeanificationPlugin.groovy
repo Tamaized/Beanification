@@ -14,23 +14,23 @@ class BeanificationPlugin implements Plugin<Project> {
 		def instrumentedDir = project.layout.buildDirectory.dir(LOCATION)
 
 			def transformTask = project.tasks.register("beanificationTransformClasses") {
-//				it.dependsOn "classes"
-//
-//				it.doLast {
+				it.dependsOn "classes"
+
+				it.doLast {
 //					def classFileTree = project.fileTree(instrumentedDir.get()).matching {
 //						include '**/*.class'
 //					}
 //					classFileTree.each { file ->
 //						CompileTimeTransformer.processClassFile(file)
 //					}
-//				}
+				}
 			}
 
 			project.tasks.register("beanificationCopyClasses", Copy) {
-				/*it.dependsOn "classes"
+				it.dependsOn "classes"
 				it.from project.layout.buildDirectory.dir("classes/java/main")
 				it.into instrumentedDir
-				it.finalizedBy transformTask*/
+				it.finalizedBy transformTask
 			}
 	}
 
