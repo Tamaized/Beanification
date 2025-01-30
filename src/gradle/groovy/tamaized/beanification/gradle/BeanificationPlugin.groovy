@@ -24,6 +24,7 @@ class BeanificationPlugin implements Plugin<Project> {
 
 			it.doLast {
 				instrumentedDir.get().asFile.listFiles().findAll { file ->
+					logger.info(file.name)
 					file.name.endsWith('.class')
 				}.each { file ->
 					logger.info(file.name)
