@@ -11,26 +11,28 @@ class BeanificationPlugin implements Plugin<Project> {
 
 	@Override
 	void apply(Project project) {
-		def transformTask = project.tasks.register("beanificationTransformClasses") {
-			it.dependsOn "classes"
+		project.afterEvaluate {
+			def transformTask = project.tasks.register("beanificationTransformClasses") {
+				it.dependsOn "classes"
 
-			it.doLast {
-				def instrumentedDir = project.layout.buildDirectory.dir(LOCATION).get().asFile
-				def classFiles = project.fileTree(instrumentedDir).matching {
-					include '**/*.class'
-				}
+				it.doLast {
+					def instrumentedDir = project.layout.buildDirectory.dir(LOCATION).get().asFile
+					def classFiles = project.fileTree(instrumentedDir).matching {
+						include '**/*.class'
+					}
 
-				classFiles.each { file ->
-					CompileTimeTransformer.processClassFile(file)
+					classFiles.each { file ->
+						CompileTimeTransformer.processClassFile(file)
+					}
 				}
 			}
-		}
 
-		project.tasks.register("beanificationCopyClasses", Copy) {
-			it.dependsOn "classes"
-			it.from project.layout.buildDirectory.dir("classes/java/main")
-			it.into project.layout.buildDirectory.dir(LOCATION)
-			it.finalizedBy transformTask
+			project.tasks.register("beanificationCopyClasses", Copy) {
+				it.dependsOn "classes"
+				it.from project.layout.buildDirectory.dir("classes/java/main")
+				it.into project.layout.buildDirectory.dir(LOCATION)
+				it.finalizedBy transformTask
+			}
 		}
 	}
 
