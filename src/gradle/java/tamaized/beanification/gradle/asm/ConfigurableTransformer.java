@@ -1,6 +1,7 @@
-package tamaized.beanification.gradle;
+package tamaized.beanification.gradle.asm;
 
-import org.objectweb.asm.*;
+import groovyjarjarasm.asm.MethodVisitor;
+import groovyjarjarasm.asm.Opcodes;
 
 public class ConfigurableTransformer {
 

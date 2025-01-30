@@ -1,6 +1,8 @@
 import org.jetbrains.gradle.ext.JUnit
 
 plugins {
+	id 'java-gradle-plugin'
+	id 'groovy'
 	id 'java-library'
 	id 'eclipse'
 	id 'idea'
@@ -53,6 +55,9 @@ base {
 }
 
 sourceSets {
+	gradle {
+
+	}
 	combined {
 		compileClasspath += sourceSets.main.compileClasspath
 		java {
@@ -145,6 +150,9 @@ dependencies {
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.10.3'
 	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.10.3'
 	testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '5.12.0'
+
+	gradleImplementation(gradleApi())
+	gradleImplementation(localGroovy())
 }
 
 test {
@@ -187,6 +195,7 @@ publishing {
 				artifact this.project.sourceJar
 				artifact this.project.testJar
 				artifact this.project.testSourceJar
+				artifact this.project.gradlePluginJar
 			}
 			groupId 'tamaized'
 			artifactId this.project.mod_id
@@ -219,6 +228,12 @@ tasks.register('testSourceJar', Jar) {
 	dependsOn 'classes'
 	from sourceSets.test.allSource
 	archiveClassifier = 'test-sources'
+}
+
+tasks.register('gradlePluginJar', Jar) {
+	dependsOn 'classes'
+	from sourceSets.gradle.allSource
+	archiveClassifier = 'gradle'
 }
 
 tasks.withType(JavaCompile).configureEach {

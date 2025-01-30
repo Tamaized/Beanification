@@ -1,7 +1,7 @@
-package tamaized.beanification.gradle;
+package tamaized.beanification.gradle.asm;
 
-import org.objectweb.asm.*;
-import org.objectweb.asm.commons.AdviceAdapter;
+import groovyjarjarasm.asm.*;
+import groovyjarjarasm.asm.commons.AdviceAdapter;
 
 import java.io.File;
 import java.io.IOException;
