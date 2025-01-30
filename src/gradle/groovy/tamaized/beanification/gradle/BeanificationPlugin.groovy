@@ -11,8 +11,10 @@ class BeanificationPlugin implements Plugin<Project> {
 		project.tasks.register("beanificationTransformClasses") {
 			it.dependsOn 'classes'
 
+			def workDir = project.layout.buildDirectory.dir("classes/java/main")
+
 			it.doLast {
-				project.layout.buildDirectory.dir("classes/java/main").get().asFileTree.matching {
+				workDir.get().asFileTree.matching {
 					it.include '**/*.class'
 				}.each { file ->
 					CompileTimeTransformer.processClassFile(file)
