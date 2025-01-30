@@ -17,11 +17,11 @@ class BeanificationPlugin implements Plugin<Project> {
 			it.dependsOn "classes"
 
 			it.doLast {
-				Arrays.stream(instrumentedDir.get().asFile.listFiles())
-					.filter { file -> file.name.endsWith('.class') }
-					.each { file ->
-						CompileTimeTransformer.processClassFile(file)
-					}
+				instrumentedDir.get().asFile.listFiles().findAll { file ->
+					file.name.endsWith('.class')
+				}.each { file ->
+					CompileTimeTransformer.processClassFile(file)
+				}
 			}
 		}
 
