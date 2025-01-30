@@ -23,6 +23,7 @@ class BeanificationPlugin implements Plugin<Project> {
 			it.dependsOn copyTask
 
 			it.doLast {
+				logger.info("????")
 				def tree = instrumentedDir.get().asFileTree
 				if (tree.isEmpty()) {
 					logger.warn("EMPTY!!!!!!!!!!!!!!!")
