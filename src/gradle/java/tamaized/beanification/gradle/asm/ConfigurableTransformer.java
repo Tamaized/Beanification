@@ -10,7 +10,7 @@ public class ConfigurableTransformer {
 	private static final Logger logger = Logging.getLogger(ConfigurableTransformer.class);
 
 	public static void transform(MethodVisitor method, String className) {
-		logger.info("Transforming {}", className);
+		logger.lifecycle("Transforming {}", className);
 		method.visitVarInsn(Opcodes.ALOAD, 0);
 		method.visitMethodInsn(Opcodes.INVOKESTATIC, "tamaized/beanification/BeanContext", "injectInto", "(Ljava/lang/Object;)V", false);
 	}
