@@ -23,10 +23,14 @@ class BeanificationPlugin implements Plugin<Project> {
 			it.dependsOn copyTask
 
 			it.doLast {
-				instrumentedDir.get().asFileTree.each { file ->
+				def tree = instrumentedDir.get().asFileTree
+				if (tree.isEmpty()) {
+					logger.warn("EMPTY!!!!!!!!!!!!!!!")
+				}
+				tree.each { file ->
 					logger.info(file.name)
 				}
-				instrumentedDir.get().asFileTree.matching {
+				tree.matching {
 					it.include '**/*.class'
 				}.each { file ->
 					logger.info(file.name)
