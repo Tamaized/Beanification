@@ -23,11 +23,9 @@ class BeanificationPlugin implements Plugin<Project> {
 			it.dependsOn copyTask
 
 			it.doLast {
-				instrumentedDir.get().asFile.listFiles().findAll { file ->
-					logger.info(file.name)
-					file.name.endsWith('.class')
+				instrumentedDir.get().asFileTree.matching {
+					it.include '**/*.class'
 				}.each { file ->
-					logger.info(file.name)
 					CompileTimeTransformer.processClassFile(file)
 				}
 			}
