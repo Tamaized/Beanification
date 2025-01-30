@@ -7,15 +7,15 @@ import tamaized.beanification.gradle.asm.CompileTimeTransformer
 
 class BeanificationPlugin implements Plugin<Project> {
 
+	private static final String LOCATION = "beanification-instrumented-classes"
+
 	@Override
 	void apply(Project project) {
-		def instrumentedClassesDir = project.layout.buildDirectory.dir("beanification-instrumented-classes")
-
 		def transformTask = project.tasks.register("beanificationTransformClasses") {
 			it.dependsOn "classes"
 
 			it.doLast {
-				def instrumentedDir = instrumentedClassesDir.get().asFile
+				def instrumentedDir = project.layout.buildDirectory.dir(LOCATION).get().asFile
 				def classFiles = project.fileTree(instrumentedDir).matching {
 					include '**/*.class'
 				}
@@ -29,7 +29,7 @@ class BeanificationPlugin implements Plugin<Project> {
 		project.tasks.register("beanificationCopyClasses", Copy) {
 			it.dependsOn "classes"
 			it.from project.layout.buildDirectory.dir("classes/java/main")
-			it.into instrumentedClassesDir
+			it.into project.layout.buildDirectory.dir(LOCATION)
 			it.finalizedBy transformTask
 		}
 	}
