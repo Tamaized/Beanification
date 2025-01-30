@@ -232,7 +232,7 @@ tasks.register('testSourceJar', Jar) {
 
 tasks.register('gradlePluginJar', Jar) {
 	dependsOn 'classes'
-	from sourceSets.gradle.allSource
+	from sourceSets.gradle.output
 	archiveClassifier = 'gradle'
 }
 
