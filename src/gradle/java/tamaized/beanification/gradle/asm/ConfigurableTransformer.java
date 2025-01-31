@@ -28,8 +28,7 @@ public class ConfigurableTransformer {
 						logger.lifecycle("[ConfigurableTransformer] Skipping, already injected {} {} {}", classNode.name, methodNode.name, methodNode.desc);
 					} else {
 						logger.lifecycle("[ConfigurableTransformer] Transforming {} {} {}", classNode.name, methodNode.name, methodNode.desc);
-						// Constructors ALWAYS have 2 starting instructions for aload0 + super()/this()
-						methodNode.instructions.insert(methodNode.instructions.getFirst().getNext(), AsmInsnListUtil.of(
+						methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), AsmInsnListUtil.of(
 							new VarInsnNode(Opcodes.ALOAD, 0),
 							new MethodInsnNode(Opcodes.INVOKESTATIC, "tamaized/beanification/BeanContext", "injectInto", "(Ljava/lang/Object;)V", false)
 						));
