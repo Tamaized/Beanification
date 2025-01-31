@@ -1,44 +1,23 @@
 package tamaized.beanification.gradle.asm;
 
 import groovyjarjarasm.asm.*;
-import groovyjarjarasm.asm.commons.AdviceAdapter;
+import groovyjarjarasm.asm.tree.ClassNode;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
 
 public class CompileTimeTransformer {
 
-	public static byte[] transform(byte[] classBytes, String className) {
+	public static byte[] transform(byte[] classBytes, String fileName) {
 		ClassReader classReader = new ClassReader(classBytes);
 		ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_FRAMES);
-		ClassVisitor classVisitor = new ClassVisitor(Opcodes.ASM9, classWriter) {
-			private final List<String> annotations = new ArrayList<>();
+		ClassNode classNode = new ClassNode();
+		classReader.accept(classNode, 0);
 
-			@Override
-			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-				annotations.add(descriptor);
-				return super.visitAnnotation(descriptor, visible);
-			}
+		ConfigurableTransformer.transform(classNode);
 
-			@Override
-			public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-				MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
-				if ("<init>".equals(name)) {
-					return new AdviceAdapter(Opcodes.ASM9, mv, access, name, descriptor) {
-						@Override
-						protected void onMethodEnter() {
-							if (annotations.contains("Ltamaized/beanification/Configurable;"))
-								ConfigurableTransformer.transform(mv, className, name, descriptor);
-						}
-					};
-				}
-				return mv;
-			}
-		};
-		classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES);
+		classNode.accept(classWriter);
 		return classWriter.toByteArray();
 	}
 
