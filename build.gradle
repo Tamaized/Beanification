@@ -133,6 +133,7 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+	gradlePluginPortal()
 	mavenLocal()
 	maven {
 		name 'Jared\'s Maven' // JEI
@@ -141,9 +142,6 @@ repositories {
 }
 
 dependencies {
-	// Purely so we can see MDG sources for debugging purposes
-	compileOnly "net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:${project.mdg_version}"
-
 	implementation "mezz.jei:jei-${project.base_minecraft_version}-neoforge:${project.jei_version}"
 
 	testImplementation group: 'net.neoforged', name: 'testframework', version: project.neo_version
@@ -153,6 +151,7 @@ dependencies {
 
 	gradleImplementation(gradleApi())
 	gradleImplementation(localGroovy())
+	gradleImplementation "net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:${project.mdg_version}"
 }
 
 test {
