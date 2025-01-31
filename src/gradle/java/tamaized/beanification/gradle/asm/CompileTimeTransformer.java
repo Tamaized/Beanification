@@ -31,7 +31,7 @@ public class CompileTimeTransformer {
 						@Override
 						protected void onMethodEnter() {
 							if (annotations.contains("Ltamaized/beanification/Configurable;"))
-								ConfigurableTransformer.transform(mv, className);
+								ConfigurableTransformer.transform(mv, className, name, descriptor);
 						}
 					};
 				}
