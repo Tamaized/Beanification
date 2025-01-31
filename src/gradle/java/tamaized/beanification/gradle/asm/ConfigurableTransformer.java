@@ -30,11 +30,13 @@ public class ConfigurableTransformer {
 						logger.lifecycle("[ConfigurableTransformer] Skipping, already injected {} {} {}", classNode.name, methodNode.name, methodNode.desc);
 					} else {
 						logger.lifecycle("[ConfigurableTransformer] Transforming {} {} {}", classNode.name, methodNode.name, methodNode.desc);
-						methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), AsmInsnListUtil.of(
-							new VarInsnNode(Opcodes.ALOAD, 0),
-							new MethodInsnNode(Opcodes.INVOKESTATIC, "tamaized/beanification/BeanContext", "injectInto", "(Ljava/lang/Object;)V", false)
-						));
-						flag.set(true);
+						StreamSupport.stream(methodNode.instructions.spliterator(), false).filter(insn -> insn.getOpcode() == Opcodes.RETURN).forEach(target -> {
+							methodNode.instructions.insertBefore(target, AsmInsnListUtil.of(
+								new VarInsnNode(Opcodes.ALOAD, 0),
+								new MethodInsnNode(Opcodes.INVOKESTATIC, "tamaized/beanification/BeanContext", "injectInto", "(Ljava/lang/Object;)V", false)
+							));
+							flag.set(true);
+						});
 					}
 				});
 		}

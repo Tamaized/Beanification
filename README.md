@@ -108,6 +108,8 @@ For further details, view the javadoc for:
 A gradle plugin is required for this annotation to work as it modifies bytecode during compile time to inject `BeanContext.injectInto(this)` into every constructor.
 
 It even works if the class does not have any constructor defined.
+
+The injection happens before each `RETURN (b1) (177)` opcode
 ```groovy
 buildscript {
 	repositories{
@@ -140,16 +142,27 @@ public class MyItem extends Item {
 	public MyItem() {
 		super();
 		z();
+		// BeanContext.injectInto(this) <- compile time injection here
 	}
 
 	protected MyItem(int x) {
 		this();
 		x.y();
 		z();
+		// BeanContext.injectInto(this) <- compile time injection here
 	}
 
 	private void z() {
-		myComponent.apply(); // Will not NPE
+		// Will NPE
+		// The injection happens at the very end of constructors
+		// If you need beans during constructors themselves, use constructor injection
+		myComponent.apply();
+	}
+
+	public void w() {
+		// Will not NPE
+		// Assuming this is invoked after the object constructor has finished
+		myComponent.apply();
 	}
 
 }
