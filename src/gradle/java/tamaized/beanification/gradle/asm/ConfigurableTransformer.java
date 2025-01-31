@@ -1,9 +1,7 @@
 package tamaized.beanification.gradle.asm;
 
-import groovyjarjarasm.asm.MethodVisitor;
 import groovyjarjarasm.asm.Opcodes;
 import groovyjarjarasm.asm.tree.ClassNode;
-import groovyjarjarasm.asm.tree.InsnList;
 import groovyjarjarasm.asm.tree.MethodInsnNode;
 import groovyjarjarasm.asm.tree.VarInsnNode;
 import org.gradle.api.logging.Logger;
@@ -16,7 +14,7 @@ public class ConfigurableTransformer {
 	private static final Logger logger = Logging.getLogger(ConfigurableTransformer.class);
 
 	public static void transform(ClassNode classNode) {
-		if (classNode.visibleAnnotations.stream().anyMatch(node -> node.desc.equals("Ltamaized/beanification/Configurable;"))) {
+		if (classNode.visibleAnnotations != null && classNode.visibleAnnotations.stream().anyMatch(node -> node.desc.equals("Ltamaized/beanification/Configurable;"))) {
 			classNode.methods.stream()
 				.filter(node -> node.name.equals("<init>"))
 				.forEach(methodNode -> {
@@ -27,9 +25,9 @@ public class ConfigurableTransformer {
 								methodInsn.name.equals("injectInto") &&
 								methodInsn.desc.equals("(Ljava/lang/Object;)V")
 					)) {
-						logger.lifecycle("Skipping, already injected {} {} {}", classNode.name, methodNode.name, methodNode.desc);
+						logger.lifecycle("[ConfigurableTransformer] Skipping, already injected {} {} {}", classNode.name, methodNode.name, methodNode.desc);
 					} else {
-						logger.lifecycle("Transforming {} {} {}", classNode.name, methodNode.name, methodNode.desc);
+						logger.lifecycle("[ConfigurableTransformer] Transforming {} {} {}", classNode.name, methodNode.name, methodNode.desc);
 						// Constructors ALWAYS have 2 starting instructions for aload0 + super()/this()
 						methodNode.instructions.insert(methodNode.instructions.getFirst().getNext(), AsmInsnListUtil.of(
 							new VarInsnNode(Opcodes.ALOAD, 0),
