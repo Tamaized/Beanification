@@ -13,7 +13,7 @@ public class CompileTimeTransformer {
 		ClassReader classReader = new ClassReader(classBytes);
 		ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_FRAMES);
 		ClassNode classNode = new ClassNode();
-		classReader.accept(classNode, 0);
+		classReader.accept(classNode, ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG);
 
 		ConfigurableTransformer.transform(classNode);
 
