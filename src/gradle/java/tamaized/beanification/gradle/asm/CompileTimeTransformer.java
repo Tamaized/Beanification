@@ -11,12 +11,12 @@ public class CompileTimeTransformer {
 
 	public static byte[] transform(byte[] classBytes, String fileName) {
 		ClassReader classReader = new ClassReader(classBytes);
-		ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_FRAMES);
 		ClassNode classNode = new ClassNode();
 		classReader.accept(classNode, ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG);
 
 		ConfigurableTransformer.transform(classNode);
 
+		ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 		classNode.accept(classWriter);
 		return classWriter.toByteArray();
 	}
