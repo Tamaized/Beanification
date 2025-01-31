@@ -13,7 +13,7 @@ public class CompileTimeTransformer {
 
 	public static byte[] transform(byte[] classBytes, String className) {
 		ClassReader classReader = new ClassReader(classBytes);
-		ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+		ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_FRAMES);
 		ClassVisitor classVisitor = new ClassVisitor(Opcodes.ASM9, classWriter) {
 			private final List<String> annotations = new ArrayList<>();
 
