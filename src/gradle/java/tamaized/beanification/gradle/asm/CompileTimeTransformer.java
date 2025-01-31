@@ -16,7 +16,7 @@ public class CompileTimeTransformer {
 
 		ConfigurableTransformer.transform(classNode);
 
-		ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+		ClassWriter classWriter = new ClassWriter(0);
 		classNode.accept(classWriter);
 		return classWriter.toByteArray();
 	}
