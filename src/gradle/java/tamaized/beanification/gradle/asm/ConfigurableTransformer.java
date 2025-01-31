@@ -7,13 +7,15 @@ import groovyjarjarasm.asm.tree.VarInsnNode;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.StreamSupport;
 
 public class ConfigurableTransformer {
 
 	private static final Logger logger = Logging.getLogger(ConfigurableTransformer.class);
 
-	public static void transform(ClassNode classNode) {
+	public static boolean transform(ClassNode classNode) {
+		AtomicBoolean flag = new AtomicBoolean(false);
 		if (classNode.visibleAnnotations != null && classNode.visibleAnnotations.stream().anyMatch(node -> node.desc.equals("Ltamaized/beanification/Configurable;"))) {
 			classNode.methods.stream()
 				.filter(node -> node.name.equals("<init>"))
@@ -32,9 +34,11 @@ public class ConfigurableTransformer {
 							new VarInsnNode(Opcodes.ALOAD, 0),
 							new MethodInsnNode(Opcodes.INVOKESTATIC, "tamaized/beanification/BeanContext", "injectInto", "(Ljava/lang/Object;)V", false)
 						));
+						flag.set(true);
 					}
 				});
 		}
+		return flag.get();
 	}
 
 }

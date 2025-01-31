@@ -12,11 +12,14 @@ public class CompileTimeTransformer {
 	public static byte[] transform(byte[] classBytes, String fileName) {
 		ClassReader classReader = new ClassReader(classBytes);
 		ClassNode classNode = new ClassNode();
-		classReader.accept(classNode, ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG);
+		classReader.accept(classNode, 0);
 
-		ConfigurableTransformer.transform(classNode);
+		boolean modified = ConfigurableTransformer.transform(classNode);
 
-		ClassWriter classWriter = new ClassWriter(0);
+		if (!modified)
+			return null;
+
+		ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 		classNode.accept(classWriter);
 		return classWriter.toByteArray();
 	}
@@ -24,7 +27,8 @@ public class CompileTimeTransformer {
 	public static void processClassFile(File classFile) throws IOException {
 		byte[] classBytes = Files.readAllBytes(classFile.toPath());
 		byte[] modifiedBytes = transform(classBytes, classFile.getName());
-		Files.write(classFile.toPath(), modifiedBytes);
+		if (modifiedBytes != null)
+			Files.write(classFile.toPath(), modifiedBytes);
 	}
 
 }
