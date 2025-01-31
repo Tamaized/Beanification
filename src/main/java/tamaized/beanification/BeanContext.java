@@ -44,12 +44,6 @@ public final class BeanContext extends AbstractBeanContext {
 
 	private static final Logger LOGGER = LogManager.getLogger(BeanContext.class);
 
-	private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-	@Nullable
-	private static MethodHandle handle_EntityRenderDispatcher_renderers;
-	@Nullable
-	private static MethodHandle handle_BlockEntityRenderDispatcher_renderers;
-
 	static BeanContext INSTANCE = new BeanContext();
 
 	@InternalAutowired
@@ -90,20 +84,10 @@ public final class BeanContext extends AbstractBeanContext {
 	 * Should be called as early as possible to avoid null bean injections
 	 */
 	public static void init(@Nullable Consumer<BeanContextRegistrar> context) {
-		INSTANCE.initInternal(context, false);
+		INSTANCE.initInternal(context);
 	}
 
-	/**
-	 * <strike>Invoke in your {@link net.neoforged.fml.common.Mod} constructor to enable non-static {@link Autowired} in the class</strike>
-	 * <p>
-	 * Use {@link tamaized.beanification.BeanContext#injectInto(Object)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.2.X")
-	public static void enableMainModClassInjections(Object mod) {
-		Objects.requireNonNull(ModLoadingContext.get().getActiveContainer().getEventBus()).post(new ProcessBeanAnnotationsEvent(mod));
-	}
-
-	void initInternal(@Nullable Consumer<BeanContextRegistrar> context, boolean forceInjectRegistries) {
+	void initInternal(@Nullable Consumer<BeanContextRegistrar> context) {
 		final long ms = System.currentTimeMillis();
 		LOGGER.info("Starting Bean Context");
 		if (isFrozen())
@@ -187,26 +171,6 @@ public final class BeanContext extends AbstractBeanContext {
 
 			currentContainerContext = new ContainerContext(modContainer, scanData, annotationDataPreProcessors, annotationDataProcessors, annotationDataPostProcessors);
 
-			// @Mod
-			modContainer.getEventBus().addListener(ProcessBeanAnnotationsEvent.class, event -> handleProcessBeanAnnotationsEvent(event, modContainer, scanData, annotationDataPostProcessors));
-			// Registries
-			if (config.configurableSettings().isRegistryEnabled())
-				modContainer.getEventBus().addListener(FMLCommonSetupEvent.class, event -> injectRegistries());
-			// Registries (Data Gen)
-			if (config.configurableSettings().isRegistryEnabled())
-				modContainer.getEventBus().addListener(EventPriority.HIGHEST, GatherDataEvent.class, event -> injectRegistries());
-			// Renderers (Entity, BlockEntity)
-			if (config.configurableSettings().isRendererEnabled())
-				modContainer.getEventBus().addListener(EventPriority.LOWEST, RegisterClientReloadListenersEvent.class,
-					event -> event.registerReloadListener((ResourceManagerReloadListener) manager -> injectRenderers())
-				);
-			// Entities
-			if (config.configurableSettings().isEntityEnabled())
-				NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, EntityJoinLevelEvent.class, this::injectEntity);
-
-			if (forceInjectRegistries)
-				injectRegistries();
-
 			LOGGER.info("Bean Context loaded in {} ms", System.currentTimeMillis() - ms);
 		} catch (Throwable e) {
 			throwInjectionFailedException(currentInjection, e);
@@ -222,22 +186,6 @@ public final class BeanContext extends AbstractBeanContext {
 		for (AnnotationDataPostProcessor annotationDataPostProcessor : currentContainerContext.annotationDataPostProcessors) {
 			annotationDataPostProcessor.process(beanContextInternalInjector, currentContainerContext.container, currentContainerContext.scanData, o, curInj);
 		}
-	}
-
-	/**
-	 * Use {@link #injectInto(Object)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.2.X")
-	private void handleProcessBeanAnnotationsEvent(ProcessBeanAnnotationsEvent event, ModContainer modContainer, ModFileScanData scanData, List<AnnotationDataPostProcessor> annotationDataPostProcessors) {
-		final long ms = System.currentTimeMillis();
-		LOGGER.debug("Processing {}", event.getObjectToProcess());
-		AtomicReference<Object> curInj = new AtomicReference<>();
-		try {
-			runAnnotationDataPostProcessors(event.getObjectToProcess(), curInj);
-		} catch (Throwable e) {
-			throwInjectionFailedException(curInj, e);
-		}
-		LOGGER.debug("Finished processing {} in {} ms", event.getObjectToProcess(), System.currentTimeMillis() - ms);
 	}
 
 	/**
@@ -257,95 +205,6 @@ public final class BeanContext extends AbstractBeanContext {
 			INSTANCE.throwInjectionFailedException(curInj, e);
 		}
 		LOGGER.debug("Finished processing {} in {} ms", object, System.currentTimeMillis() - ms);
-	}
-
-	/**
-	 * Use {@link #injectInto(Object)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.2.X")
-	private void injectRegistries() {
-		final long ms = System.currentTimeMillis();
-		LOGGER.debug("Processing registry objects");
-		AtomicReference<Object> curInj = new AtomicReference<>();
-		BuiltInRegistries.REGISTRY.holders().flatMap(r -> r.value().holders()).forEach(holder -> {
-			try {
-				Object o = holder.value();
-				if (classOrSuperHasAnnotation(o.getClass(), Configurable.class)) {
-					LOGGER.debug("Processing {}", o);
-					runAnnotationDataPostProcessors(o, curInj);
-				}
-			} catch (Throwable e) {
-				throwInjectionFailedException(curInj, e);
-			}
-		});
-		LOGGER.debug("Finished processing registry objects in {} ms", System.currentTimeMillis() - ms);
-	}
-
-	/**
-	 * Use {@link #injectInto(Object)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.2.X")
-	@SuppressWarnings("unchecked")
-	void injectRenderers() {
-		final long ms = System.currentTimeMillis();
-		LOGGER.debug("Processing renderer objects");
-		AtomicReference<Object> curInj = new AtomicReference<>();
-
-		if (handle_EntityRenderDispatcher_renderers == null || handle_BlockEntityRenderDispatcher_renderers == null) {
-			Field entityRenderDispatcher_renderers = ObfuscationReflectionHelper.findField(EntityRenderDispatcher.class, "renderers");
-			Field blockEntityRenderDispatcher_renderers = ObfuscationReflectionHelper.findField(BlockEntityRenderDispatcher.class, "renderers");
-
-			MethodHandle tmp_handle_EntityRenderDispatcher_renderers = null;
-			MethodHandle tmp_handle_BlockEntityRenderDispatcher_renderers = null;
-
-			try {
-				tmp_handle_EntityRenderDispatcher_renderers = LOOKUP.unreflectGetter(entityRenderDispatcher_renderers);
-				tmp_handle_BlockEntityRenderDispatcher_renderers = LOOKUP.unreflectGetter(blockEntityRenderDispatcher_renderers);
-			} catch (IllegalAccessException e) {
-				LOGGER.error("Exception", e);
-			}
-
-			if (tmp_handle_EntityRenderDispatcher_renderers == null || tmp_handle_BlockEntityRenderDispatcher_renderers == null) {
-				throw new RuntimeException("Could not construct BeanContext");
-			}
-
-			handle_EntityRenderDispatcher_renderers = tmp_handle_EntityRenderDispatcher_renderers;
-			handle_BlockEntityRenderDispatcher_renderers = tmp_handle_BlockEntityRenderDispatcher_renderers;
-		}
-
-		try {
-			Stream.concat(
-				((Map<EntityType<?>, EntityRenderer<?>>) handle_EntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getEntityRenderDispatcher())).values().stream(),
-				((Map<BlockEntityType<?>, BlockEntityRenderer<?>>) handle_BlockEntityRenderDispatcher_renderers.invoke(Minecraft.getInstance().getBlockEntityRenderDispatcher())).values().stream()
-			).forEach(renderer -> {
-				try {
-					if (classOrSuperHasAnnotation(renderer.getClass(), Configurable.class)) {
-						runAnnotationDataPostProcessors(renderer, curInj);
-					}
-				} catch (Throwable e) {
-					throwInjectionFailedException(curInj, e);
-				}
-			});
-		} catch (Throwable e) {
-			LOGGER.error("Exception during renderer injection", e);
-			throw new RuntimeException(e);
-		}
-		LOGGER.debug("Finished processing renderer objects in {} ms", System.currentTimeMillis() - ms);
-	}
-
-	/**
-	 * Use {@link #injectInto(Object)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.2.X")
-	private void injectEntity(EntityJoinLevelEvent event) {
-		AtomicReference<Object> curInj = new AtomicReference<>();
-		try {
-			if (classOrSuperHasAnnotation(event.getEntity().getClass(), Configurable.class)) {
-				runAnnotationDataPostProcessors(event.getEntity(), curInj);
-			}
-		} catch (Throwable e) {
-			throwInjectionFailedException(curInj, e);
-		}
 	}
 
 	private boolean classOrSuperHasAnnotation(Class<?> c, Class<? extends Annotation> a) {

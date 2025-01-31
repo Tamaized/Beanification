@@ -10,7 +10,7 @@
 
 ## Gradle
 - ModDevGradle is recommended.
-  - (version 1.0.1 is being used for this example)
+  - (version 2.0.76 is being used for this example)
 - The gradle shadow plugin is recommended.
 ```groovy
 plugins {
@@ -72,11 +72,6 @@ import java.beans.beancontext.BeanContext;
 public class YourMod {
 
 	static {
-		// (Optional) Configure the BeanContext, must be called before #init
-		BeanContext.configure()
-			.configurableSettings().disableRenderer()
-			.configurableSettings().disableEntity();
-
 		// General Setup
 		BeanContext.init();
 
@@ -95,7 +90,7 @@ public class YourMod {
 
 	public YourMod() {
 		// Enables @Autowired to function with non-static fields in the main @Mod class
-		BeanContext.enableMainModClassInjections();
+		BeanContext.injectInto(this);
 	}
 
 }
@@ -106,6 +101,59 @@ For further details, view the javadoc for:
 - Component
 - PostConstruct
 - Configurable
+
+## Enable `@Configurable`
+### ModDevGradle 2.0.X is required
+
+A gradle plugin is required for this annotation to work as it modifies bytecode during compile time to inject `BeanContext.injectInto(this)` into every constructor.
+
+It even works if the class does not have any constructor defined.
+```groovy
+buildscript {
+	repositories{
+		maven {
+			name 'Beanification'
+			url 'https://maven.tamaized.com/releases/'
+		}
+	}
+	dependencies {
+		classpath "tamaized:beanification:${minecraft_version}-${beanification_version}:gradle"
+	}
+}
+
+plugins {
+	...
+}
+
+apply plugin: 'tamaized.beanification'
+```
+
+### This only works for Intellij run configs and the gradle classes (build) task! Other IDEs are unsupported at this time.
+
+```java
+@Configurable
+public class MyItem extends Item {
+
+	@Autowired
+	private MyComponent myComponent;
+
+	public MyItem() {
+		super();
+		z();
+	}
+
+	protected MyItem(int x) {
+		this();
+		x.y();
+		z();
+	}
+
+	private void z() {
+		myComponent.apply(); // Will not NPE
+	}
+
+}
+```
 
 ## Donations
 https://ko-fi.com/tamaized

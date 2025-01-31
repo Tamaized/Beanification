@@ -3,19 +3,9 @@ package tamaized.beanification;
 import java.lang.annotation.*;
 
 /**
- * Supported class types will be handled as pseudo-beans for {@link tamaized.beanification.processors.AnnotationDataPostProcessor}.<p/>
+ * <b>Must be enabled with the gradle plugin, see the README for more information</b><p/>
  *
- * This annotation is {@link Inherited} to subclasses.<p/>
- *
- * Supported Types:<br/>
- * <ul>
- *     <li>Registry Objects</li>
- *     <li>Registered {@link net.minecraft.client.renderer.blockentity.BlockEntityRenderer}</li>
- *     <li>Registered {@link net.minecraft.client.renderer.entity.EntityRenderer}</li>
- *     <li>Entity objects fired on {@link net.neoforged.neoforge.event.entity.EntityJoinLevelEvent}</li>
- * </ul>
- *
- * Supported types can be disabled with {@link BeanContext#configure()} to reduce overhead.
+ * Annotated classes will have all of their constructors injected with {@link BeanContext#injectInto(Object)}
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
