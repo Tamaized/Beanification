@@ -1,8 +1,14 @@
 package tamaized.beanification.gradle
 
+import groovy.transform.TupleConstructor
+import groovyjarjarantlr4.v4.runtime.misc.Nullable
+import net.neoforged.moddevgradle.dsl.ModDevExtension
 import net.neoforged.moddevgradle.internal.IntelliJOutputDirectoryValueSource
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileTree
+import org.gradle.api.plugins.JavaPluginExtension
 import tamaized.beanification.gradle.asm.CompileTimeTransformer
 
 class BeanificationPlugin implements Plugin<Project> {
@@ -10,32 +16,39 @@ class BeanificationPlugin implements Plugin<Project> {
 	@Override
 	void apply(Project project) {
 		def taskIdea = project.tasks.register("beanificationTransformClassesIdea") {
-			def outputDir = project.providers.provider {
-				project.sourceSets.main.output.classesDirs
-			}
+			def sourceSets = project.extensions.getByType(JavaPluginExtension).sourceSets
 
-			//noinspection GroovyAccessibility
-			def ideaOut = IntelliJOutputDirectoryValueSource.getIntellijOutputDirectory(project)?.apply(project)?.toPath()?.resolve('production')?.toAbsolutePath()?.toString()
-			def modClasses = project.providers.provider {
-				ideaOut == null ? null : project.fileTree(ideaOut)
+			def outputDirs = project.providers.provider {
+				sourceSets.toList().collect { sourceSet ->
+					//noinspection GroovyAccessibility
+					def ideaOutput = IntelliJOutputDirectoryValueSource.getIntellijOutputDirectory(project)?.apply(project)?.toPath()?.resolve(
+						sourceSet.name == "main" ? 'production' : sourceSet.name
+					)?.toAbsolutePath()?.toString()
+					return new NamedIdeOutputDirs(
+						sourceSet.name,
+						sourceSet.output.classesDirs,
+						ideaOutput == null ? null : project.fileTree(ideaOutput)
+					)
+				}
 			}
 
 			it.doLast {
-				def tree = modClasses.orElse(outputDir).get().asFileTree
-				println tree
-				tree.matching {
-					it.include '**/*.class'
-				}.each { file ->
-					CompileTimeTransformer.processClassFile(file)
+				outputDirs.get().each {outputDir ->
+					println "Processing ${outputDir.name}"
+					FileTree tree = outputDir.ideOutputDir != null ? outputDir.ideOutputDir : outputDir.gradleOutputDir.asFileTree
+					println tree
+					tree.matching {
+						it.include '**/*.class'
+					}.each { file ->
+						CompileTimeTransformer.processClassFile(file)
+					}
 				}
 			}
 		}
 
-		project.neoForge {
-			runs {
-				configureEach {
-					taskBefore taskIdea
-				}
+		project.extensions.getByType(ModDevExtension).runs {
+			configureEach {
+				taskBefore taskIdea
 			}
 		}
 
@@ -47,7 +60,7 @@ class BeanificationPlugin implements Plugin<Project> {
 			outputs.file(outputFile)
 
 			def outputDir = project.providers.provider {
-				project.sourceSets.main.output.classesDirs
+				project.extensions.getByType(JavaPluginExtension).sourceSets.main.output.classesDirs
 			}
 			it.doLast {
 				def tree = outputDir.get().asFileTree
@@ -64,6 +77,14 @@ class BeanificationPlugin implements Plugin<Project> {
 		project.afterEvaluate {
 			classesTask.get().finalizedBy(task)
 		}
+	}
+
+	@TupleConstructor
+	class NamedIdeOutputDirs {
+		String name
+		FileCollection gradleOutputDir
+		@Nullable FileTree ideOutputDir
+
 	}
 
 }
