@@ -180,7 +180,9 @@ public final class BeanContext extends AbstractBeanContext {
 			return;
 		LAST_INJECTED_INTO = new WeakReference<>(object);
 		final long ms = System.currentTimeMillis();
-		LOGGER.debug("Processing {}", object);
+		boolean loggingEnabled = INSTANCE.config.loggingSettings().isInjectIntoEnabled();
+		if (loggingEnabled)
+			LOGGER.debug("Processing {}", object);
 		AtomicReference<Object> curInj = new AtomicReference<>();
 		try {
 			ContainerContext context = INSTANCE.currentContainerContext;
@@ -191,7 +193,8 @@ public final class BeanContext extends AbstractBeanContext {
 		} catch (Throwable e) {
 			INSTANCE.throwInjectionFailedException(curInj, e);
 		}
-		LOGGER.debug("Finished processing {} in {} ms", object, System.currentTimeMillis() - ms);
+		if (loggingEnabled)
+			LOGGER.debug("Finished processing {} in {} ms", object, System.currentTimeMillis() - ms);
 	}
 
 	private boolean classOrSuperHasAnnotation(Class<?> c, Class<? extends Annotation> a) {
