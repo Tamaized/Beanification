@@ -1,24 +1,8 @@
 package tamaized.beanification;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingContext;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.util.ObfuscationReflectionHelper;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.Lazy;
-import net.neoforged.neoforge.data.event.GatherDataEvent;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,19 +16,19 @@ import tamaized.beanification.processors.BeanProcessor;
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 public final class BeanContext extends AbstractBeanContext {
 
 	private static final Logger LOGGER = LogManager.getLogger(BeanContext.class);
 
 	static BeanContext INSTANCE = new BeanContext();
+
+	@Nullable
+	private static WeakReference<Object> LAST_INJECTED_INTO = null;
 
 	@InternalAutowired
 	private BeanContextConfig config;
@@ -191,7 +175,10 @@ public final class BeanContext extends AbstractBeanContext {
 	/**
 	 * May be called in an object's Constructor to enable non-static {@link Autowired} annotations
 	 */
-	public static void injectInto(Object object) {
+	public static synchronized void injectInto(Object object) {
+		if (LAST_INJECTED_INTO == null || LAST_INJECTED_INTO.get() == null || LAST_INJECTED_INTO.get() == object)
+			return;
+		LAST_INJECTED_INTO = new WeakReference<>(object);
 		final long ms = System.currentTimeMillis();
 		LOGGER.debug("Processing {}", object);
 		AtomicReference<Object> curInj = new AtomicReference<>();
