@@ -63,11 +63,6 @@ build.dependsOn shadowJar
 In your main `@Mod` class
 
 ```java
-import tamaized.beanification.BeanContext;
-import tamaized.beanification.Autowired;
-
-import java.beans.beancontext.BeanContext;
-
 @Mod("modid")
 public class YourMod {
 
