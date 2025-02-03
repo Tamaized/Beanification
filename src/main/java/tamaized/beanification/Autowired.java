@@ -21,6 +21,10 @@ import java.lang.annotation.Target;
  * Can also be applied to <strike>{@link Bean} method parameters and</strike> {@link Component} constructor parameters.<br/>
  * Note: {@link Bean} capabilities are not yet implemented.
  * </p>
+ * <p>
+ * Record <b>fields</b> will be skipped, as a java record will apply annotations to both fields and constructor parameters.<br/>
+ * Record constructor injection will still work.
+ * </p>
  */
 @Nullable
 @Target({ElementType.FIELD, ElementType.PARAMETER})

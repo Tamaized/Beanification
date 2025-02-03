@@ -137,6 +137,27 @@ public class AutowiredAnnotationDataPostProcessorTests {
 	}
 
 	@Test
+	public void processBeanRecord() {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		BeanContext.BeanContextInternalInjector injector = mock(BeanContext.BeanContextInternalInjector.class);
+		ModContainer modContainer = mock(ModContainer.class);
+
+		record TestRecord(Integer x) {
+
+		}
+
+		TestRecord bean = new TestRecord(1);
+
+		assertDoesNotThrow(() -> instance.process(injector, modContainer, scanData, bean, new AtomicReference<>()));
+
+		verifyNoInteractions(distAnnotationRetriever);
+		verifyNoInteractions(internalReflectionHelper);
+		verifyNoInteractions(scanData);
+		verifyNoInteractions(injector);
+		verifyNoInteractions(modContainer);
+	}
+
+	@Test
 	public void processNonBean() throws NoSuchFieldException, IllegalAccessException {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
