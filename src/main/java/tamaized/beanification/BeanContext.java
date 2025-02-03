@@ -138,17 +138,17 @@ public final class BeanContext extends AbstractBeanContext {
 			freeze();
 
 			for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
-				LOGGER.debug("Running instanced post processor {}", annotationDataPostProcessor.getClass());
-				for (Object bean : getBeans().values()) {
-					annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, bean, currentInjection);
-				}
+				LOGGER.debug("Running static post processor {}", annotationDataPostProcessor.getClass());
+				annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, currentInjection);
 			}
 
 			currentInjection.set(null);
 
 			for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
-				LOGGER.debug("Running static post processor {}", annotationDataPostProcessor.getClass());
-				annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, currentInjection);
+				LOGGER.debug("Running instanced post processor {}", annotationDataPostProcessor.getClass());
+				for (Object bean : getBeans().values()) {
+					annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, bean, currentInjection);
+				}
 			}
 
 			currentInjection.set(null);
