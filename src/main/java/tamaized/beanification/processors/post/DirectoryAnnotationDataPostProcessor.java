@@ -59,7 +59,13 @@ public class DirectoryAnnotationDataPostProcessor implements AnnotationDataPostP
 
 	private List<?> injectList(BeanContext.BeanContextInternalInjector context, ModFileScanData scanData, Class<?> parent, Class<?> classFilter) {
 		return scanData.getClasses().stream()
-			.map(data -> data.clazz().getClass())
+			.map(data -> {
+				try {
+					return Class.forName(data.clazz().getClassName());
+				} catch (ClassNotFoundException e) {
+					throw new RuntimeException(e);
+				}
+			})
 			.filter(data -> data.getPackageName().equals(parent.getPackageName()))
 			.filter(classFilter::isAssignableFrom)
 			.filter(data -> context.contains(data, null))
