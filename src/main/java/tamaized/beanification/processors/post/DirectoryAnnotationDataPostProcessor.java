@@ -59,6 +59,7 @@ public class DirectoryAnnotationDataPostProcessor implements AnnotationDataPostP
 
 	private List<?> injectList(BeanContext.BeanContextInternalInjector context, ModFileScanData scanData, Class<?> parent, Class<?> classFilter) {
 		return scanData.getClasses().stream()
+			.filter(data -> data.clazz().getInternalName().replace("/", ".").contains(parent.getPackageName()))
 			.map(data -> {
 				try {
 					return Class.forName(data.clazz().getClassName());
@@ -66,7 +67,6 @@ public class DirectoryAnnotationDataPostProcessor implements AnnotationDataPostP
 					throw new RuntimeException(e);
 				}
 			})
-			.filter(data -> data.getPackageName().equals(parent.getPackageName()))
 			.filter(classFilter::isAssignableFrom)
 			.filter(data -> context.contains(data, null))
 			.map(data -> context.inject(data, null))
