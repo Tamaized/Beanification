@@ -4,6 +4,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import tamaized.beanification.Autowired;
+import tamaized.beanification.Directory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -35,6 +36,25 @@ public class InternalReflectionHelper {
 		Class<?> sup = c.getSuperclass();
 		if (sup != null)
 			getAllAutowiredFieldsIncludingSuper(sup, name, value, list);
+	}
+
+	public List<Field> getAllDirectoryFieldsIncludingSuper(Class<?> c, String name) {
+		List<Field> list =  new ArrayList<>();
+		getAllDirectoryFieldsIncludingSuper(c, name, list);
+		return list;
+	}
+
+	private void getAllDirectoryFieldsIncludingSuper(Class<?> c, String name, List<Field> list) {
+		try {
+			Field f = c.getDeclaredField(name);
+			if (f.isAnnotationPresent(Directory.class))
+				list.add(f);
+		} catch (NoSuchFieldException ex) {
+			// NO-OP
+		}
+		Class<?> sup = c.getSuperclass();
+		if (sup != null)
+			getAllDirectoryFieldsIncludingSuper(sup, name, list);
 	}
 
 	public boolean isStatic(Field field) {

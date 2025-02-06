@@ -173,7 +173,7 @@ public final class BeanContext extends AbstractBeanContext {
 	}
 
 	/**
-	 * May be called in an object's Constructor to enable non-static {@link Autowired} annotations
+	 * May be called in an object's Constructor to enable non-static {@link Autowired} and {@link Directory} annotations
 	 */
 	public static synchronized void injectInto(Object object) {
 		if (LAST_INJECTED_INTO != null && LAST_INJECTED_INTO.get() != null && LAST_INJECTED_INTO.get() == object)
