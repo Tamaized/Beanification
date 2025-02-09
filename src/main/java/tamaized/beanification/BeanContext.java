@@ -246,7 +246,7 @@ public final class BeanContext extends AbstractBeanContext {
 		}
 
 		public void addDependency(Class<?> type, @Nullable String name, Class<?> depType, @Nullable String depName) {
-			LOGGER.info("Bean ({}{}) depends on ({}{})", type, name == null ? "" : ":".concat(name), depType, depName == null ? "" : ":".concat(depName));
+			LOGGER.debug("Bean ({}{}) depends on ({}{})", type, name == null ? "" : ":".concat(name), depType, depName == null ? "" : ":".concat(depName));
 			BeanDefinition<?> key = new BeanDefinition<>(type, name);
 			List<BeanDefinition<?>> deps = BeanContext.this.beanDependencies.getOrDefault(key, new ArrayList<>());
 			deps.add(new BeanDefinition<>(depType, depName));
