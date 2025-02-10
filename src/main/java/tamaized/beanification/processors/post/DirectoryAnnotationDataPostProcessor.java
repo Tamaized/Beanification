@@ -36,7 +36,8 @@ public class DirectoryAnnotationDataPostProcessor implements AnnotationDataPostP
 					throw new IllegalStateException("@Directory fields must be non-static inside Beans");
 				}
 				field.trySetAccessible();
-				field.set(bean, injectList(context, scanData, bean.getClass(), field.getAnnotation(Directory.class).value()));
+				Directory annotation = field.getAnnotation(Directory.class);
+				field.set(bean, injectList(context, scanData, bean.getClass(), annotation.value(), annotation.recursive()));
 			}
 		}
 	}
@@ -52,14 +53,17 @@ public class DirectoryAnnotationDataPostProcessor implements AnnotationDataPostP
 			Directory annotation = field.getAnnotation(Directory.class);
 			if (internalReflectionHelper.isStatic(field)) {
 				field.trySetAccessible();
-				field.set(null, injectList(context, scanData, type, annotation.value()));
+				field.set(null, injectList(context, scanData, type, annotation.value(), annotation.recursive()));
 			}
 		}
 	}
 
-	private List<?> injectList(BeanContext.BeanContextInternalInjector context, ModFileScanData scanData, Class<?> parent, Class<?> classFilter) {
+	private List<?> injectList(BeanContext.BeanContextInternalInjector context, ModFileScanData scanData, Class<?> parent, Class<?> classFilter, boolean recursive) {
 		return scanData.getClasses().stream()
-			.filter(data -> data.clazz().getInternalName().replace("/", ".").contains(parent.getPackageName()))
+			.filter(data -> {
+				String pkg = data.clazz().getInternalName().replace("/", ".");
+				return recursive ? pkg.contains(parent.getPackageName()) : pkg.equals(parent.getPackageName());
+			})
 			.map(data -> {
 				try {
 					return Class.forName(data.clazz().getClassName());
