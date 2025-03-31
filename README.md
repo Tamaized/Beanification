@@ -1,5 +1,10 @@
 # Beanification
 
+## Minecraft version?
+Each version should work on everything 1.21.1+
+It's possible it can work on earlier versions as well, but they are untested.
+If there's a Minecraft version with a breaking change that requires a new version of this library, then it will be stated here.
+
 ### All Rights Reserved
 - This library may only be used as a dependency in software projects.
 - Modification is prohibited. (Pull Requests are allowed)
