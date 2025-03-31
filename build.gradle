@@ -37,7 +37,7 @@ idea {
 	}
 }
 
-version = "${project.minecraft_version}-${project.mod_major_version}." + (hasProperty("CIVersion") ? CIVersion : mod_version)
+version = "${project.mod_major_version}." + (hasProperty("CIVersion") ? CIVersion : mod_version)
 group = group_name
 
 java {
@@ -49,7 +49,7 @@ java {
 compileJava.options.compilerArgs << "-Xlint:all,-classfile,-processing,-deprecation,-this-escape" << "-Werror"
 
 base {
-	archivesName = "${project.mod_id}-${project.minecraft_version}"
+	archivesName = "${project.mod_id}"
 }
 
 sourceSets {
