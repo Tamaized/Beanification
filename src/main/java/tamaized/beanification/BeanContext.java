@@ -1,7 +1,7 @@
 package tamaized.beanification;
 
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
@@ -51,27 +51,27 @@ public final class BeanContext extends AbstractBeanContext {
 	}
 
 	/**
-	 * Must be called before {@link #init()} to have any effect.
+	 * Must be called before {@link #init(String)} to have any effect.
 	 */
 	public static BeanContextConfig configure() {
 		return INSTANCE.config;
 	}
 
 	/**
-	 * @see #init(Consumer)
+	 * @see #init(String, Consumer)
 	 */
-	public static void init() {
-		init(null);
+	public static void init(String modid) {
+		init(modid, null);
 	}
 
 	/**
 	 * Should be called as early as possible to avoid null bean injections
 	 */
-	public static void init(@Nullable Consumer<BeanContextRegistrar> context) {
-		INSTANCE.initInternal(context);
+	public static void init(String modid, @Nullable Consumer<BeanContextRegistrar> context) {
+		INSTANCE.initInternal(modid, context);
 	}
 
-	void initInternal(@Nullable Consumer<BeanContextRegistrar> context) {
+	void initInternal(String modid, @Nullable Consumer<BeanContextRegistrar> context) {
 		final long ms = System.currentTimeMillis();
 		LOGGER.info("Starting Bean Context");
 		if (isFrozen())
@@ -83,7 +83,7 @@ public final class BeanContext extends AbstractBeanContext {
 		if (context != null)
 			context.accept(beanContextRegistrar);
 
-		ModContainer modContainer = ModLoadingContext.get().getActiveContainer();
+		ModContainer modContainer = ModList.get().getModContainerById(modid).orElseThrow(() -> new RuntimeException("Where is " + modid + "???!"));
 
 		if (modContainer.getEventBus() == null)
 			throw new RuntimeException("Mod EventBus is null");
