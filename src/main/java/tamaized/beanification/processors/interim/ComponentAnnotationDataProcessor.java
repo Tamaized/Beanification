@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-@BeanProcessor
+@BeanProcessor(priority = 10) // Needs to run last to handle deps properly otherwise a dep may be null forever and cause an infinite loop
 public class ComponentAnnotationDataProcessor implements AnnotationDataProcessor {
 
 	@InternalAutowired
