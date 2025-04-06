@@ -2,12 +2,10 @@ package tamaized.beanification;
 
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import tamaized.beanification.event.OverrideBeanEvent;
 import tamaized.beanification.internal.BeanContextConfig;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.processors.AnnotationDataPostProcessor;
@@ -135,8 +133,6 @@ public final class BeanContext extends AbstractBeanContext {
 				LOGGER.debug("Running processor {}", annotationDataProcessor.getClass());
 				annotationDataProcessor.process(beanContextInternalRegistrar, modContainer, scanData);
 			}
-
-			NeoForge.EVENT_BUS.post(new OverrideBeanEvent(new BeanContextOverrideInjector()));
 
 			beanDependencies.clear();
 			freeze();
@@ -287,22 +283,6 @@ public final class BeanContext extends AbstractBeanContext {
 
 		public <T> T inject(Class<T> type, @Nullable String name) {
 			return BeanContext.this.injectInternal(type, name);
-		}
-
-		public boolean contains(Class<?> type, @Nullable String name) {
-			return BeanContext.this.getBeans().containsKey(new BeanDefinition<>(type, name));
-		}
-
-	}
-
-	public final class BeanContextOverrideInjector {
-
-		private BeanContextOverrideInjector() {
-
-		}
-
-		public <T> void override(Class<T> type, @Nullable String name, T instance) {
-			BeanContext.this.getBeans().put(new BeanDefinition<>(type, name), instance);
 		}
 
 		public boolean contains(Class<?> type, @Nullable String name) {
