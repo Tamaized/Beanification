@@ -55,9 +55,12 @@ class BeanificationPlugin implements Plugin<Project> {
 		def task = project.tasks.register("beanificationTransformClasses") {
 			mustRunAfter 'classes'
 
-			inputs.files(project.fileTree("src/main/java"))
-			def outputFile = project.layout.buildDirectory.file("customTaskOutput.txt").get().asFile
-			outputs.file(outputFile)
+			// inputs.files(project.fileTree("src/main/java"))
+			// def outputFile = project.layout.buildDirectory.file("beanificationTaskOutput.txt").get().asFile
+			// outputs.file(outputFile)
+			outputs.upToDateWhen {
+				false
+			}
 
 			def outputDir = project.providers.provider {
 				project.extensions.getByType(JavaPluginExtension).sourceSets.main.output.classesDirs
@@ -70,7 +73,7 @@ class BeanificationPlugin implements Plugin<Project> {
 				}.each { file ->
 					CompileTimeTransformer.processClassFile(file)
 				}
-				outputFile.text = "${new Date()}"
+				//outputFile.text = "${new Date()}"
 			}
 		}
 		def classesTask = project.tasks.named('classes')
