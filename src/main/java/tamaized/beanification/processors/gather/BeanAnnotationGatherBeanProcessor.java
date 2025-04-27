@@ -10,9 +10,7 @@ import tamaized.beanification.processors.IBeanProcessor;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Objects;
+import java.util.*;
 
 @BeanProcessor(BeanLifeCycle.Gather)
 public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
@@ -25,6 +23,7 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
+		List<Data> list = new ArrayList<>();
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
 			Method method = internalReflectionHelper.getDeclaredMethod(Class.forName(data.clazz().getClassName()), data.memberName());
@@ -33,7 +32,7 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 				throw new IllegalStateException("@Bean methods must be static");
 			Bean annotation = method.getAnnotation(Bean.class);
 			String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
-			context.gather().orElseThrow().put(new BeanDefinition<>(method.getReturnType(), name), () -> {
+			list.add(new Data(annotation.priority(), new BeanDefinition<>(method.getReturnType(), name), () -> {
 				if (method.getParameterCount() == 0) {
 					return method.invoke(null);
 				} else {
@@ -44,8 +43,15 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 						return context.injector().orElseThrow().apply(depDef);
 					}).toArray());
 				}
-			});
+			}));
 		}
+		list.stream()
+			.sorted(Comparator.comparingInt(Data::priority))
+			.forEach(data -> context.gather().orElseThrow().put(data.definition, data.factory));
+	}
+
+	private record Data(int priority, BeanDefinition<?> definition, BeanContext.ThrowingSupplier<Object> factory) {
+
 	}
 
 }

@@ -24,4 +24,6 @@ public @interface Bean {
 
 	Dist[] dist() default {};
 
+	int priority() default 0;
+
 }
