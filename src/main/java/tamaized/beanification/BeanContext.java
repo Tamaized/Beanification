@@ -189,7 +189,7 @@ public final class BeanContext extends AbstractBeanContext {
 		ModFileScanData scanData
 	) throws Throwable {
 		for (IBeanProcessor beanProcessor : beanProcessors.get(lifeCycle)) {
-			if (lifeCycle != BeanLifeCycle.Complete || config.loggingSettings().isInjectIntoEnabled())
+			if (INSTANCE.lifeCycle != BeanLifeCycle.Complete || config.loggingSettings().isInjectIntoEnabled())
 				LOGGER.debug("Running processor {}", beanProcessor.getClass());
 			beanProcessor.process(lifeCycleContext, modContainer, scanData);
 		}
