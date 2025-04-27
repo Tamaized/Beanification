@@ -166,7 +166,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
-				Optional.empty(),
+				Optional.of(currentInjection),
 				Optional.empty(),
 				Optional.of(getBeans())
 			);
