@@ -78,12 +78,6 @@ public class YourMod {
 
 		// General Setup
 		BeanContext.init();
-
-		// This overload can be used instead to register beans directly
-		BeanContext.init(context -> {
-			context.register(YourComponent.class, new YourComponent());
-			context.register(YourComponent.class, "someName", new YourExtendedComponent());
-		});
 	}
 
 	@Autowired
@@ -95,6 +89,17 @@ public class YourMod {
 	public YourMod() {
 		// Enables @Autowired to function with non-static fields in the main @Mod class
 		BeanContext.injectInto(this);
+		// You could instead use `@Configurable` to apply this automatically, more information below.
+	}
+
+	@Bean
+	private static YourComponent yourComponent() {
+		return new YourComponent();
+	}
+
+	@Bean("someName")
+	private static YourComponent yourExtendedComponent() {
+		return new YourExtendedComponent();
 	}
 
 }
