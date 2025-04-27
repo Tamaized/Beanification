@@ -12,7 +12,7 @@ import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;
 import java.util.*;
 
-@BeanProcessor(BeanLifeCycle.Gather)
+@BeanProcessor(value = BeanLifeCycle.Gather, priority = 1)
 public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 
 	@InternalAutowired
