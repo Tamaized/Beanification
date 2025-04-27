@@ -155,7 +155,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty(),
 				Optional.of(currentInjection),
-				Optional.of(definition -> injectChecked(definition.type(), definition.name())),
+				Optional.of(definition -> injectChecked(definition.type(), definition.name()).orElse(null)),
 				Optional.of(getBeans())
 			);
 			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
@@ -224,7 +224,7 @@ public final class BeanContext extends AbstractBeanContext {
 					Optional.empty(),
 					Optional.empty(),
 					Optional.of(curInj),
-					Optional.of(definition -> INSTANCE.injectChecked(definition.type(), definition.name())),
+					Optional.of(definition -> INSTANCE.injectChecked(definition.type(), definition.name()).orElse(null)),
 					Optional.of(Map.of(new BeanDefinition<>(object.getClass(), null), object))
 				),
 				context.container(),
