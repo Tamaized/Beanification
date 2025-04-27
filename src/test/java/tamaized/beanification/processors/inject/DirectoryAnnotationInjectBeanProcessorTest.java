@@ -188,8 +188,10 @@ public class DirectoryAnnotationInjectBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
+		TestBean dep = new TestBean();
 		Map<BeanDefinition<?>, Object> beanMap = new HashMap<>();
-		beanMap.put(new BeanDefinition<>(TestBean.class, null), bean);
+		beanMap.put(new BeanDefinition<>(TestBean.class, "source"), bean);
+		beanMap.put(new BeanDefinition<>(TestBean.class, null), dep);
 		when(context.beans()).thenReturn(Optional.of(beanMap));
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
@@ -209,7 +211,6 @@ public class DirectoryAnnotationInjectBeanProcessorTest {
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(true);
 
-		TestBean dep = new TestBean();
 		when(context.injector()).thenReturn(Optional.of(def -> dep));
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
@@ -226,12 +227,16 @@ public class DirectoryAnnotationInjectBeanProcessorTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void processStatic() throws Throwable {
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 		ModContainer modContainer = mock(ModContainer.class);
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
-		when(context.beans()).thenReturn(Optional.of(new HashMap<>()));
+		TestBean dep = new TestBean();
+		Map<BeanDefinition<?>, Object> beanMap = new HashMap<>();
+		beanMap.put(new BeanDefinition<>(TestBean.class, null), dep);
+		when(context.beans()).thenReturn(Optional.of(new HashMap<>()), Optional.of(beanMap));
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
@@ -250,7 +255,6 @@ public class DirectoryAnnotationInjectBeanProcessorTest {
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(true);
 
-		TestBean dep = new TestBean();
 		when(context.injector()).thenReturn(Optional.of(def -> dep));
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
