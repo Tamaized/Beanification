@@ -80,7 +80,6 @@ public class DirectoryAnnotationInjectBeanProcessor implements IBeanProcessor {
 			})
 			.filter(classFilter::isAssignableFrom)
 			.map(data -> new BeanDefinition<>(data, null))
-			.filter(data -> context.beans().orElseThrow().containsKey(data))
 			.map(data -> context.injector().orElseThrow().apply(data))
 			.filter(Objects::nonNull)
 			.toList();

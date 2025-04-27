@@ -155,7 +155,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty(),
 				Optional.of(currentInjection),
-				Optional.of(definition -> injectInternal(definition.type(), definition.name())),
+				Optional.of(definition -> injectChecked(definition.type(), definition.name())),
 				Optional.of(getBeans())
 			);
 			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
@@ -223,7 +223,7 @@ public final class BeanContext extends AbstractBeanContext {
 					Optional.empty(),
 					Optional.empty(),
 					Optional.of(curInj),
-					Optional.of(definition -> INSTANCE.injectInternal(definition.type(), definition.name())),
+					Optional.of(definition -> INSTANCE.injectChecked(definition.type(), definition.name())),
 					Optional.of(Map.of(new BeanDefinition<>(object.getClass(), null), object))
 				),
 				context.container(),
@@ -245,6 +245,16 @@ public final class BeanContext extends AbstractBeanContext {
 	@Override
 	protected boolean canAccessUnfrozen() {
 		return lifeCycle == BeanLifeCycle.Construct;
+	}
+
+	private <T> Optional<T> injectChecked(Class<T> type) {
+		return injectChecked(type, null);
+	}
+
+	private <T> Optional<T> injectChecked(Class<T> type, @Nullable String name) {
+		if (INSTANCE.getBeans().containsKey(new BeanDefinition<>(type, name)))
+			return Optional.of(INSTANCE.injectInternal(type, name));
+		return Optional.empty();
 	}
 
 	public static <T> T inject(Class<T> type) {
