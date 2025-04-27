@@ -4,8 +4,8 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.BeanContext;
 
-public interface AnnotationDataProcessor {
+public interface IBeanProcessor {
 
-	void process(BeanContext.BeanContextInternalRegistrar context, ModContainer modContainer, ModFileScanData scanData) throws Throwable;
+	void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable;
 
 }

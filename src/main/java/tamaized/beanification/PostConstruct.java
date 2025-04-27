@@ -8,7 +8,6 @@ import java.lang.annotation.Target;
 /**
  * <p>
  * 	Annotated methods will be automatically invoked after bean construction has finished.<br/>
- * 	Runs after {@link tamaized.beanification.processors.AnnotationDataPostProcessor}
  * </p>
  * <p>
  * 	Must have no arguments or have a single IEventBus parameter for the Mod EventBus.<br/>

@@ -18,8 +18,7 @@ import java.lang.annotation.Target;
  * When used inside a Bean or {@link Configurable} the field must be non-static.<br/>
  * When used outside a Bean, the field <b>must</b> be <b>static</b>!
  * <p>
- * Can also be applied to <strike>{@link Bean} method parameters and</strike> {@link Component} constructor parameters.<br/>
- * Note: {@link Bean} capabilities are not yet implemented.
+ * Can also be applied to {@link Bean} method parameters and {@link Component} constructor parameters.
  * </p>
  * <p>
  * Record <b>fields</b> will be skipped, as a java record will apply annotations to both fields and constructor parameters.<br/>

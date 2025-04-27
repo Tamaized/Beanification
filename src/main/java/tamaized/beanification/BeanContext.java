@@ -8,18 +8,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tamaized.beanification.internal.BeanContextConfig;
 import tamaized.beanification.internal.DistAnnotationRetriever;
-import tamaized.beanification.processors.AnnotationDataPostProcessor;
-import tamaized.beanification.processors.AnnotationDataPreProcessor;
-import tamaized.beanification.processors.AnnotationDataProcessor;
+import tamaized.beanification.processors.IBeanProcessor;
 import tamaized.beanification.processors.BeanProcessor;
 
 import javax.annotation.Nullable;
-import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 public final class BeanContext extends AbstractBeanContext {
 
@@ -36,12 +34,8 @@ public final class BeanContext extends AbstractBeanContext {
 	@InternalAutowired
 	private DistAnnotationRetriever distAnnotationRetriever;
 
-	private final Map<BeanDefinition<?>, List<BeanDefinition<?>>> beanDependencies = new HashMap<>();
-
-	private final BeanContextRegistrar beanContextRegistrar = new BeanContextRegistrar();
-	private final BeanContextInternalDependencyTreeAccumulator beanContextInternalDependencyTreeAccumulator = new BeanContextInternalDependencyTreeAccumulator();
-	private final BeanContextInternalRegistrar beanContextInternalRegistrar = new BeanContextInternalRegistrar();
-	private final BeanContextInternalInjector beanContextInternalInjector = new BeanContextInternalInjector();
+	private BeanLifeCycle lifeCycle = BeanLifeCycle.Start;
+	private final Map<BeanLifeCycle, List<IBeanProcessor>> beanProcessors = new HashMap<>();
 
 	@Nullable
 	private ContainerContext currentContainerContext = null;
@@ -57,31 +51,26 @@ public final class BeanContext extends AbstractBeanContext {
 		return INSTANCE.config;
 	}
 
-	/**
-	 * @see #init(String, Consumer)
-	 */
-	public static void init(String modid) {
-		init(modid, null);
+	public BeanLifeCycle getLifeCycle() {
+		return lifeCycle;
 	}
 
 	/**
 	 * Should be called as early as possible to avoid null bean injections
 	 */
-	public static void init(String modid, @Nullable Consumer<BeanContextRegistrar> context) {
-		INSTANCE.initInternal(modid, context);
+	public static void init(String modid) {
+		INSTANCE.initInternal(modid);
 	}
 
-	void initInternal(String modid, @Nullable Consumer<BeanContextRegistrar> context) {
+	void initInternal(String modid) {
 		final long ms = System.currentTimeMillis();
 		LOGGER.info("Starting Bean Context");
 		if (isFrozen())
 			throw new IllegalStateException("Bean Context already frozen");
 		getBeans().clear();
+		lifeCycle = BeanLifeCycle.Start;
 
 		registerInternal(BeanContext.class, null, this);
-
-		if (context != null)
-			context.accept(beanContextRegistrar);
 
 		ModContainer modContainer = ModList.get().getModContainerById(modid).orElseThrow(() -> new RuntimeException("Where is " + modid + "???!"));
 
@@ -93,67 +82,98 @@ public final class BeanContext extends AbstractBeanContext {
 
 		try {
 			LOGGER.debug("Registering Bean annotation processors");
-			List<AnnotationDataPreProcessor> annotationDataPreProcessors = new ArrayList<>();
-			List<AnnotationDataProcessor> annotationDataProcessors = new ArrayList<>();
-			List<AnnotationDataPostProcessor> annotationDataPostProcessors = new ArrayList<>();
-
-			for (Iterator<? extends Class<?>> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, BeanProcessor.class)
-				.map(a -> {
-					try {
-						return Class.forName(a.clazz().getClassName());
-					} catch (ClassNotFoundException e) {
-						throw new RuntimeException(e);
-					}
-				})
-				.sorted(Comparator.comparingInt(c -> c.getAnnotation(BeanProcessor.class).priority()))
-				.iterator(); it.hasNext(); ) {
+			beanProcessors.clear();
+			for (Iterator<? extends Class<?>> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, BeanProcessor.class).map(a -> {
+				try {
+					return Class.forName(a.clazz().getClassName());
+				} catch (ClassNotFoundException e) {
+					throw new RuntimeException(e);
+				}
+			}).sorted(Comparator.comparingInt(c -> c.getAnnotation(BeanProcessor.class).priority())).iterator(); it.hasNext(); ) {
 				Class<?> c = it.next();
-				if (AnnotationDataPreProcessor.class.isAssignableFrom(c)) {
-					annotationDataPreProcessors.add((AnnotationDataPreProcessor) c.getConstructor().newInstance());
-					LOGGER.debug("Registered Bean annotation pre processor: {}", c);
-				} else if (AnnotationDataProcessor.class.isAssignableFrom(c)) {
-					annotationDataProcessors.add((AnnotationDataProcessor) c.getConstructor().newInstance());
-					LOGGER.debug("Registered Bean annotation processor: {}", c);
-				} else if (AnnotationDataPostProcessor.class.isAssignableFrom(c)) {
-					annotationDataPostProcessors.add((AnnotationDataPostProcessor) c.getConstructor().newInstance());
-					LOGGER.debug("Registered Bean annotation post processor: {}", c);
+				if (IBeanProcessor.class.isAssignableFrom(c)) {
+					beanProcessors.computeIfAbsent(c.getAnnotation(BeanProcessor.class).value(), k -> new ArrayList<>())
+						.add((IBeanProcessor) c.getConstructor().newInstance());
+					LOGGER.debug("Registered Bean processor: {}", c);
+				} else {
+					throw new RuntimeException("Bean processor must implement IBeanProcessor: " + c);
 				}
 			}
 
-			annotationDataPreProcessors.forEach(InternalBeanContext::injectInto);
-			annotationDataProcessors.forEach(InternalBeanContext::injectInto);
-			annotationDataPostProcessors.forEach(InternalBeanContext::injectInto);
+			beanProcessors.values().stream().flatMap(List::stream).forEach(InternalBeanContext::injectInto);
 
-			for (AnnotationDataPreProcessor annotationDataPreProcessor : annotationDataPreProcessors) {
-				LOGGER.debug("Running pre processor {}", annotationDataPreProcessor.getClass());
-				annotationDataPreProcessor.process(beanContextInternalDependencyTreeAccumulator, modContainer, scanData);
-			}
+			lifeCycle = BeanLifeCycle.Gather;
+			BeanLifeCycleContext lifeCycleContext = new BeanLifeCycleContext(
+				Optional.of(new HashMap<>()),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.of(currentInjection),
+				Optional.of(definition -> injectInternal(definition.type(), definition.name())),
+				Optional.empty()
+			);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
 
-			for (AnnotationDataProcessor annotationDataProcessor : annotationDataProcessors) {
-				LOGGER.debug("Running processor {}", annotationDataProcessor.getClass());
-				annotationDataProcessor.process(beanContextInternalRegistrar, modContainer, scanData);
-			}
+			lifeCycle = BeanLifeCycle.Inspect;
+			lifeCycleContext = new BeanLifeCycleContext(
+				Optional.of(Collections.unmodifiableMap(lifeCycleContext.gather.orElseThrow())),
+				Optional.of(new HashMap<>()),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty()
+			);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
 
-			beanDependencies.clear();
+			lifeCycle = BeanLifeCycle.Validate;
+			lifeCycleContext.dependencies().orElseThrow().replaceAll((k, v) -> Collections.unmodifiableList(v));
+			lifeCycleContext = new BeanLifeCycleContext(
+				lifeCycleContext.gather,
+				Optional.of(Collections.unmodifiableMap(lifeCycleContext.dependencies.orElseThrow())),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty()
+			);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+
+			lifeCycle = BeanLifeCycle.Construct;
+			lifeCycleContext = new BeanLifeCycleContext(
+				lifeCycleContext.gather,
+				lifeCycleContext.dependencies,
+				Optional.of((definition, bean) -> registerInternal(definition.type(), definition.name(), bean)),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty()
+			);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+
 			freeze();
 
-			for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
-				LOGGER.debug("Running static post processor {}", annotationDataPostProcessor.getClass());
-				annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, currentInjection);
-			}
-
+			lifeCycle = BeanLifeCycle.Inject;
+			lifeCycleContext = new BeanLifeCycleContext(
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.of(currentInjection),
+				Optional.of(definition -> injectInternal(definition.type(), definition.name())),
+				Optional.of(getBeans())
+			);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
 			currentInjection.set(null);
 
-			for (AnnotationDataPostProcessor annotationDataPostProcessor : annotationDataPostProcessors) {
-				LOGGER.debug("Running instanced post processor {}", annotationDataPostProcessor.getClass());
-				for (Object bean : getBeans().values()) {
-					annotationDataPostProcessor.process(beanContextInternalInjector, modContainer, scanData, bean, currentInjection);
-				}
-			}
+			lifeCycle = BeanLifeCycle.Finalize;
+			lifeCycleContext = new BeanLifeCycleContext(
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.of(getBeans())
+			);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
 
-			currentInjection.set(null);
-
-			currentContainerContext = new ContainerContext(modContainer, scanData, annotationDataPreProcessors, annotationDataProcessors, annotationDataPostProcessors);
+			lifeCycle = BeanLifeCycle.Complete;
+			currentContainerContext = new ContainerContext(modContainer, scanData);
 
 			LOGGER.info("Bean Context loaded in {} ms", System.currentTimeMillis() - ms);
 		} catch (Throwable e) {
@@ -161,15 +181,21 @@ public final class BeanContext extends AbstractBeanContext {
 		}
 	}
 
-	private void throwInjectionFailedException(AtomicReference<Object> o, Throwable e) {
-		throw new RuntimeException("Bean injection failed." + (o.get() == null ? "" : (" At: " + o)), e);
+	private void runAnnotationProcessor(
+		Map<BeanLifeCycle, List<IBeanProcessor>> beanProcessors,
+		BeanLifeCycle lifeCycle,
+		BeanLifeCycleContext lifeCycleContext,
+		ModContainer modContainer,
+		ModFileScanData scanData
+	) throws Throwable {
+		for (IBeanProcessor beanProcessor : beanProcessors.get(lifeCycle)) {
+			LOGGER.debug("Running processor {}", beanProcessor.getClass());
+			beanProcessor.process(lifeCycleContext, modContainer, scanData);
+		}
 	}
 
-	private void runAnnotationDataPostProcessors(Object o, AtomicReference<Object> curInj) throws Throwable {
-		Objects.requireNonNull(currentContainerContext);
-		for (AnnotationDataPostProcessor annotationDataPostProcessor : currentContainerContext.annotationDataPostProcessors) {
-			annotationDataPostProcessor.process(beanContextInternalInjector, currentContainerContext.container, currentContainerContext.scanData, o, curInj);
-		}
+	private void throwInjectionFailedException(AtomicReference<Object> o, Throwable e) {
+		throw new RuntimeException("Bean injection failed." + (o.get() == null ? "" : (" At: " + o)), e);
 	}
 
 	/**
@@ -189,16 +215,25 @@ public final class BeanContext extends AbstractBeanContext {
 			if (context == null) {
 				throw new IllegalStateException("BeanContext.init() must be ran first before calling BeanContext.injectInto(obj)");
 			}
-			INSTANCE.runAnnotationDataPostProcessors(object, curInj);
+			INSTANCE.runAnnotationProcessor(
+				INSTANCE.beanProcessors,
+				BeanLifeCycle.Inject,
+				new BeanLifeCycleContext(
+					Optional.empty(),
+					Optional.empty(),
+					Optional.empty(),
+					Optional.of(curInj),
+					Optional.of(definition -> INSTANCE.injectInternal(definition.type(), definition.name())),
+					Optional.of(Map.of(new BeanDefinition<>(object.getClass(), null), object))
+				),
+				context.container(),
+				context.scanData()
+			);
 		} catch (Throwable e) {
 			INSTANCE.throwInjectionFailedException(curInj, e);
 		}
 		if (loggingEnabled)
 			LOGGER.debug("Finished processing {} in {} ms", object, System.currentTimeMillis() - ms);
-	}
-
-	private boolean classOrSuperHasAnnotation(Class<?> c, Class<? extends Annotation> a) {
-		return c.isAnnotationPresent(a) || (c.getSuperclass() instanceof Class<?> s && classOrSuperHasAnnotation(s, a));
 	}
 
 	@Override
@@ -223,80 +258,27 @@ public final class BeanContext extends AbstractBeanContext {
 		return Lazy.of(() -> INSTANCE.injectInternal(type, name));
 	}
 
-	public final class BeanContextRegistrar {
-
-		private BeanContextRegistrar() {
-
-		}
-
-		public <T> void register(Class<T> type, T instance) {
-			register(type, null, instance);
-		}
-
-		public <T> void register(Class<T> type, @Nullable String name, T instance) {
-			BeanContext.this.registerInternal(type, name, instance);
-		}
+	public record BeanLifeCycleContext(
+		Optional<Map<BeanDefinition<?>, ThrowingSupplier<Object>>> gather,
+		Optional<Map<BeanDefinition<?>, List<BeanDefinition<?>>>> dependencies,
+		Optional<BiConsumer<BeanDefinition<?>, Object>> register,
+		Optional<AtomicReference<Object>> currentInjection,
+		Optional<Function<BeanDefinition<?>, Object>> injector,
+		Optional<Map<BeanDefinition<?>, Object>> beans
+	) {
 
 	}
 
-	public final class BeanContextInternalDependencyTreeAccumulator {
+	@FunctionalInterface
+	public interface ThrowingSupplier<R> {
 
-		private BeanContextInternalDependencyTreeAccumulator() {
-
-		}
-
-		public void addDependency(Class<?> type, @Nullable String name, Class<?> depType, @Nullable String depName) {
-			LOGGER.debug("Bean ({}{}) depends on ({}{})", type, name == null ? "" : ":".concat(name), depType, depName == null ? "" : ":".concat(depName));
-			BeanDefinition<?> key = new BeanDefinition<>(type, name);
-			List<BeanDefinition<?>> deps = BeanContext.this.beanDependencies.getOrDefault(key, new ArrayList<>());
-			deps.add(new BeanDefinition<>(depType, depName));
-			BeanContext.this.beanDependencies.put(key, deps);
-		}
-
-	}
-
-	public final class BeanContextInternalRegistrar {
-
-		private BeanContextInternalRegistrar() {
-
-		}
-
-		public List<BeanDefinition<?>> getDependencies(Class<?> type, @Nullable String name) {
-			return BeanContext.this.beanDependencies.getOrDefault(new BeanDefinition<>(type, name), new ArrayList<>());
-		}
-
-		public Object getUnfrozenBean(BeanDefinition<?> definition) {
-			return BeanContext.this.getBeans().get(definition);
-		}
-
-		public void register(Class<?> type, @Nullable String name, Object instance) {
-			BeanContext.this.registerInternal(type, name, instance);
-		}
-
-	}
-
-	public final class BeanContextInternalInjector {
-
-		private BeanContextInternalInjector() {
-
-		}
-
-		public <T> T inject(Class<T> type, @Nullable String name) {
-			return BeanContext.this.injectInternal(type, name);
-		}
-
-		public boolean contains(Class<?> type, @Nullable String name) {
-			return BeanContext.this.getBeans().containsKey(new BeanDefinition<>(type, name));
-		}
+		R get() throws Throwable;
 
 	}
 
 	private record ContainerContext(
 		ModContainer container,
-		ModFileScanData scanData,
-		List<AnnotationDataPreProcessor> annotationDataPreProcessors,
-		List<AnnotationDataProcessor> annotationDataProcessors,
-		List<AnnotationDataPostProcessor> annotationDataPostProcessors
+		ModFileScanData scanData
 	) {
 
 	}

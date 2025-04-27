@@ -24,20 +24,7 @@ public class BeanContextTests {
 
 	@Test
 	public void contextLoads() {
-		assertDoesNotThrow(() -> instance.initInternal("beanification", registrar -> {}));
-	}
-
-	@Test
-	public void directBeanRegistration() {
-		TestBean bean = new TestBean();
-		TestBean namedBean = new TestBean();
-		instance.initInternal("beanification", registrar -> {
-			registrar.register(TestBean.class, bean);
-			registrar.register(TestBean.class, "named", namedBean);
-		});
-
-		assertSame(bean, instance.injectInternal(TestBean.class, null));
-		assertSame(namedBean, instance.injectInternal(TestBean.class, "named"));
+		assertDoesNotThrow(() -> instance.initInternal("beanification"));
 	}
 
 }

@@ -9,8 +9,7 @@ import java.lang.annotation.Target;
 
 /**
  * <p>
- * Annotated classes will be automatically registered with {@link tamaized.beanification.BeanContext.BeanContextRegistrar#register(Class, Object)}.<br/>
- * If a value is set then {@link tamaized.beanification.BeanContext.BeanContextRegistrar#register(Class, String, Object)} is used instead.
+ * Annotated classes will be automatically registered to {@link tamaized.beanification.BeanContext}.
  * </p>
  * <p>
  * Requires a no-arg constructor or a constructor with only {@link Autowired} parameters.<br/>
@@ -24,6 +23,9 @@ public @interface Component {
 
 	String DEFAULT_VALUE = "<beanification_shade_value>!beanification:internal:bean:DEFAULT!";
 
+	/**
+	 * Used to create a named bean.
+	 */
 	String value() default DEFAULT_VALUE;
 
 	Dist[] dist() default {};
