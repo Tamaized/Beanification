@@ -13,7 +13,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
-@BeanProcessor(BeanLifeCycle.Inspect)
+@BeanProcessor(value = BeanLifeCycle.Inspect, priority = 1)
 public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 
 	@InternalAutowired
@@ -24,6 +24,7 @@ public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
+		List<Data> list = new ArrayList<>();
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
 			Method method = internalReflectionHelper.getDeclaredMethod(Class.forName(data.clazz().getClassName()), data.memberName());
@@ -39,9 +40,16 @@ public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 					String unresolvedName = parameter.getAnnotation(Autowired.class).value();
 					deps.add(new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName));
 				}
-				context.dependencies().orElseThrow().put(new BeanDefinition<>(method.getReturnType(), name), deps);
+				list.add(new Data(annotation.priority(), new BeanDefinition<>(method.getReturnType(), name), deps));
 			}
 		}
+		list.stream()
+			.sorted(Comparator.comparingInt(Data::priority))
+			.forEach(data -> context.dependencies().orElseThrow().put(data.definition, data.deps));
+	}
+
+	private record Data(int priority, BeanDefinition<?> definition, List<BeanDefinition<?>> deps) {
+
 	}
 
 }
