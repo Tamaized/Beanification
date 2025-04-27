@@ -242,6 +242,11 @@ public final class BeanContext extends AbstractBeanContext {
 		super.registerInternal(type, name, instance);
 	}
 
+	@Override
+	protected boolean canAccessUnfrozen() {
+		return lifeCycle == BeanLifeCycle.Construct;
+	}
+
 	public static <T> T inject(Class<T> type) {
 		return inject(type, null);
 	}

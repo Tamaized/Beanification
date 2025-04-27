@@ -27,6 +27,10 @@ abstract class AbstractBeanContext {
 		frozen = true;
 	}
 
+	protected boolean canAccessUnfrozen() {
+		return false;
+	}
+
 	protected void registerInternal(Class<?> type, @Nullable String name, Object instance) {
 		if (frozen)
 			throw new IllegalStateException("Bean Context already frozen");
@@ -42,7 +46,7 @@ abstract class AbstractBeanContext {
 	}
 
 	<T> T injectInternal(Class<T> type, @Nullable String name) {
-		if (!frozen)
+		if (!frozen && !canAccessUnfrozen())
 			throw new IllegalStateException("Bean Context has not been initialized yet");
 		return type.cast(Objects.requireNonNull(BEANS.get(new BeanDefinition<>(type, name)), "Trying to inject Bean: " + type + (name == null ? "" : " (" + name + ")")));
 	}
