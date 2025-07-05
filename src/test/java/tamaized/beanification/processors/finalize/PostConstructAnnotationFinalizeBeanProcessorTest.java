@@ -57,6 +57,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenThrow(new NoSuchMethodException());
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
@@ -83,6 +84,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(method.getParameterCount()).thenReturn(0);
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenReturn(method);
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenThrow(new NoSuchMethodException());
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
@@ -113,6 +115,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(method.getParameterCount()).thenReturn(0);
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenReturn(method);
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenThrow(new NoSuchMethodException());
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
@@ -149,6 +152,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		});
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(method);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenThrow(new NoSuchMethodException());
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
@@ -188,6 +192,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		});
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(method);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenThrow(new NoSuchMethodException());
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
@@ -227,6 +232,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		});
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(method);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenThrow(new NoSuchMethodException());
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
@@ -267,7 +273,8 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 			IEventBus.class
 		});
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(method);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenReturn(method);
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
@@ -307,7 +314,8 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 			IEventBus.class
 		});
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(method);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenReturn(method);
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
@@ -347,7 +355,8 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 			TestBean.class
 		});
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(method);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenReturn(method);
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
@@ -389,7 +398,8 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 			IEventBus.class
 		});
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenThrow(new NoSuchMethodException());
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenReturn(method);
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenThrow(new NoSuchMethodException());
+		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenReturn(method);
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
