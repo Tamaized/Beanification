@@ -42,6 +42,11 @@ public class PostConstructAnnotationFinalizeBeanProcessor implements IBeanProces
 				} catch (NoSuchMethodException ex) {
 					// NO-OP
 				}
+				try {
+					methods.add(internalReflectionHelper.getDeclaredMethod(bean.getClass(), name, IEventBus.class, IEventBus.class));
+				} catch (NoSuchMethodException ex) {
+					// NO-OP
+				}
 				for (Method method : methods) {
 					if (method.isAnnotationPresent(PostConstruct.class)) {
 						context.currentInjection().orElseThrow().set(method);
