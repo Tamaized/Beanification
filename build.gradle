@@ -69,12 +69,28 @@ sourceSets {
 			]
 		}
 	}
+	integrationTest {
+		compileClasspath += main.compileClasspath + main.output
+
+		java {
+			srcDirs = ['src/integrationTest/java', 'src/main/java']
+		}
+		resources {
+			srcDirs = ['src/integrationTest/resources']
+		}
+	}
+}
+
+configurations {
+	integrationTestImplementation.extendsFrom implementation
 }
 
 neoForge {
 	version = project.neo_version
 
 	validateAccessTransformers = true
+
+	addModdingDependenciesTo sourceSets.integrationTest
 
 	mods {
 		beanification {
@@ -96,6 +112,7 @@ neoForge {
 
 		client {
 			client()
+			sourceSet = this.sourceSets.integrationTest
 			systemProperty 'forge.enabledGameTestNamespaces', mod_id
 			programArguments.addAll '--username', secrets.getProperty("username") ?: 'Dev', secrets.getProperty("uuid") ? '--uuid' : '', secrets.getProperty("uuid") ?: ''
 		}

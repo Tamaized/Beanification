@@ -8,7 +8,6 @@ import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
-import javax.annotation.Nullable;
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -24,11 +23,6 @@ public class AutowiredAnnotationInjectBeanProcessor implements IBeanProcessor {
 
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
-		processBeans(context, scanData);
-		processStatic(context, scanData);
-	}
-
-	private void processBeans(BeanContext.BeanLifeCycleContext context, ModFileScanData scanData) throws IllegalAccessException {
 		for (Map.Entry<BeanDefinition<?>, Object> entry : context.beans().orElseThrow().entrySet()) {
 			Object bean = entry.getValue();
 			if (bean instanceof Record)
@@ -50,24 +44,6 @@ public class AutowiredAnnotationInjectBeanProcessor implements IBeanProcessor {
 						new BeanDefinition<>(field.getType(), name.filter(s -> !s.equals(Component.DEFAULT_VALUE)).orElse(null))
 					));
 				}
-			}
-		}
-	}
-
-	private void processStatic(BeanContext.BeanLifeCycleContext context, ModFileScanData scanData) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class).iterator(); it.hasNext(); ) {
-			ModFileScanData.AnnotationData data = it.next();
-			context.currentInjection().orElseThrow().set(data.clazz());
-			Class<?> type = Class.forName(data.clazz().getClassName());
-			Field field = internalReflectionHelper.getDeclaredField(type, data.memberName());
-			context.currentInjection().orElseThrow().set(field);
-			Autowired annotation = field.getAnnotation(Autowired.class);
-			final @Nullable String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
-			if (internalReflectionHelper.isStatic(field)) {
-				field.trySetAccessible();
-				field.set(null, context.injector().orElseThrow().apply(
-					new BeanDefinition<>(field.getType(), name)
-				));
 			}
 		}
 	}

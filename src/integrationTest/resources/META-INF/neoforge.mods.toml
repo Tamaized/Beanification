@@ -1,0 +1,15 @@
+modLoader = "javafml"
+loaderVersion = "[0,)"
+issueTrackerURL = ""
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "beantest"
+version = "1.0.0"
+displayName = "Beanification Integration Test"
+itemIcon = "minecraft:cocoa_beans"
+credits = "Tamaized"
+authors = "Tamaized"
+description = '''
+Used for Integration Tests
+'''

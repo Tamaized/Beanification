@@ -149,6 +149,18 @@ public final class BeanContext extends AbstractBeanContext {
 
 			freeze();
 
+			lifeCycle = BeanLifeCycle.StaticInject;
+			lifeCycleContext = new BeanLifeCycleContext(
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.of(currentInjection),
+				Optional.of(definition -> injectChecked(definition.type(), definition.name()).orElse(null)),
+				Optional.of(getBeans())
+			);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+			currentInjection.set(null);
+
 			lifeCycle = BeanLifeCycle.Inject;
 			lifeCycleContext = new BeanLifeCycleContext(
 				Optional.empty(),

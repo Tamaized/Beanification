@@ -6,6 +6,7 @@ public enum BeanLifeCycle {
 	Inspect,
 	Validate,
 	Construct,
+	StaticInject,
 	Inject,
 	Finalize,
 	Complete

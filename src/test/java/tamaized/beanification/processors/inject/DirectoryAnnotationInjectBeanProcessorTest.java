@@ -12,6 +12,7 @@ import tamaized.beanification.directory.DirectoryOtherTestBean;
 import tamaized.beanification.directory.DirectoryTestBean;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.ListInjector;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 
@@ -32,6 +33,9 @@ public class DirectoryAnnotationInjectBeanProcessorTest {
 
 	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
+
+	@Mock
+	private ListInjector listInjector;
 
 	@InjectMocks
 	private DirectoryAnnotationInjectBeanProcessor instance;
@@ -92,22 +96,14 @@ public class DirectoryAnnotationInjectBeanProcessorTest {
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(false);
 
-		TestBean dep = new TestBean();
-		when(context.injector()).thenReturn(Optional.of(def -> dep));
-
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
-		ModFileScanData.ClassData classData = mock(ModFileScanData.ClassData.class);
-		doReturn(Type.getType(TestBean.class)).when(classData).clazz();
-		ModFileScanData.ClassData classDataRecursive = mock(ModFileScanData.ClassData.class);
-		doReturn(Type.getType(DirectoryTestBean.class)).when(classDataRecursive).clazz();
-		ModFileScanData.ClassData classDataRecursiveOther = mock(ModFileScanData.ClassData.class);
-		doReturn(Type.getType(DirectoryOtherTestBean.class)).when(classDataRecursiveOther).clazz();
-		when(scanData.getClasses()).thenReturn(Set.of(classData, classDataRecursive, classDataRecursiveOther));
+		List<?> deps = List.of(new TestBean());
+		doReturn(deps).when(listInjector).inject(context, scanData, bean.getClass(), TestBean.class, false);
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
-		verify(field).set(bean, List.of(dep));
+		verify(field).set(bean, deps);
 	}
 
 	@Test
@@ -142,26 +138,15 @@ public class DirectoryAnnotationInjectBeanProcessorTest {
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(false);
 
-		TestBean dep = new TestBean();
-		when(context.injector()).thenReturn(Optional.of(def -> {
-			if (def.equals(new BeanDefinition<>(DirectoryTestBean.class, null))) return recursiveBean;
-			else if (def.equals(new BeanDefinition<>(DirectoryOtherTestBean.class, null))) return recursiveOtherBean;
-			return dep;
-		}));
-
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
-		ModFileScanData.ClassData classData = mock(ModFileScanData.ClassData.class);
-		doReturn(Type.getType(TestBean.class)).when(classData).clazz();
-		ModFileScanData.ClassData classDataRecursive = mock(ModFileScanData.ClassData.class);
-		doReturn(Type.getType(DirectoryTestBean.class)).when(classDataRecursive).clazz();
-		ModFileScanData.ClassData classDataRecursiveOther = mock(ModFileScanData.ClassData.class);
-		doReturn(Type.getType(DirectoryOtherTestBean.class)).when(classDataRecursiveOther).clazz();
-		when(scanData.getClasses()).thenReturn(Set.of(classData, classDataRecursive, classDataRecursiveOther));
+		TestBean dep = new TestBean();
+		List<?> deps = List.of(recursiveBean, dep);
+		doReturn(deps).when(listInjector).inject(context, scanData, bean.getClass(), TestBean.class, true);
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
-		verify(field).set(eq(bean), argThat(arg -> arg instanceof List<?> list && list.size() == 2 && list.contains(dep) && list.contains(recursiveBean)));
+		verify(field).set(bean, deps);
 	}
 
 	@Test
@@ -224,48 +209,6 @@ public class DirectoryAnnotationInjectBeanProcessorTest {
 		assertEquals("@Directory fields must be non-static inside Beans", result.getMessage());
 
 		verify(field, never()).set(bean, dep);
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void processStatic() throws Throwable {
-		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-
-		TestBean dep = new TestBean();
-		Map<BeanDefinition<?>, Object> beanMap = new HashMap<>();
-		beanMap.put(new BeanDefinition<>(TestBean.class, null), dep);
-		when(context.beans()).thenReturn(Optional.of(new HashMap<>()), Optional.of(beanMap));
-
-		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
-		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenAnswer(invocation -> Stream.of(data));
-
-		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), TestBean.class)).thenReturn(true);
-
-		when(data.annotationData()).thenReturn(Map.of("value", Component.DEFAULT_VALUE));
-		when(data.memberName()).thenReturn("memberName");
-
-		Field field = mockField(false);
-		when(internalReflectionHelper.getAllDirectoryFieldsIncludingSuper(TestBean.class, "memberName")).thenReturn(
-			List.of(field)
-		);
-		when(internalReflectionHelper.getDeclaredField(TestBean.class, "memberName")).thenReturn(field);
-
-		when(internalReflectionHelper.isStatic(field)).thenReturn(true);
-
-		when(context.injector()).thenReturn(Optional.of(def -> dep));
-
-		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
-
-		ModFileScanData.ClassData classData = mock(ModFileScanData.ClassData.class);
-		doReturn(Type.getType(TestBean.class)).when(classData).clazz();
-		when(scanData.getClasses()).thenReturn(Set.of(classData));
-
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
-
-		verify(field).set(null, List.of(dep));
 	}
 
 }

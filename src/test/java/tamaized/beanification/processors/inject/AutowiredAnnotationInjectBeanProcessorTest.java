@@ -159,39 +159,4 @@ public class AutowiredAnnotationInjectBeanProcessorTest {
 		verify(field, never()).set(bean, dep);
 	}
 
-	@Test
-	public void processStatic() throws Throwable {
-		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-
-		when(context.beans()).thenReturn(Optional.of(new HashMap<>()));
-
-		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
-		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(invocation -> Stream.of(data));
-
-		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), TestBean.class)).thenReturn(true);
-
-		when(data.annotationData()).thenReturn(Map.of("value", Component.DEFAULT_VALUE));
-		when(data.memberName()).thenReturn("memberName");
-
-		Field field = mockField();
-		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(TestBean.class, "memberName", Component.DEFAULT_VALUE)).thenReturn(
-			List.of(field)
-		);
-		when(internalReflectionHelper.getDeclaredField(TestBean.class, "memberName")).thenReturn(field);
-
-		when(internalReflectionHelper.isStatic(field)).thenReturn(true);
-
-		TestBean dep = new TestBean();
-		when(context.injector()).thenReturn(Optional.of(def -> dep));
-
-		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
-
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
-
-		verify(field).set(null, dep);
-	}
-
 }
