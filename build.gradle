@@ -1,3 +1,5 @@
+import net.neoforged.moddevgradle.dsl.ModModel
+
 plugins {
 	id 'java-gradle-plugin'
 	id 'groovy'
@@ -31,9 +33,6 @@ idea {
 	module {
 		downloadJavadoc = true
 		downloadSources = true
-
-		outputDir = file("out/combined/classes")
-		testOutputDir = file("out/combined/classes")
 	}
 }
 
@@ -42,7 +41,7 @@ group = group_name
 
 java {
 	toolchain {
-		languageVersion.set(JavaLanguageVersion.of(21))
+		languageVersion.set(JavaLanguageVersion.of(25))
 	}
 }
 
@@ -56,29 +55,18 @@ sourceSets {
 	gradle {
 
 	}
-	combined {
-		compileClasspath += sourceSets.main.compileClasspath
-		java {
-			srcDirs += [
-			    sourceSets.main.java.srcDirs
-			]
-		}
-		resources {
-			srcDirs += [
-			    sourceSets.test.resources.srcDirs
-			]
-		}
-	}
-	integrationTest {
-		compileClasspath += main.compileClasspath + main.output
 
-		java {
-			srcDirs = ['src/integrationTest/java', 'src/main/java']
-		}
+	main {
 		resources {
-			srcDirs = ['src/integrationTest/resources']
+			srcDir 'src/generated/resources'
 		}
 	}
+
+	integrationTest {
+		compileClasspath += main.output
+		runtimeClasspath += main.output
+	}
+
 }
 
 configurations {
@@ -93,45 +81,51 @@ neoForge {
 	addModdingDependenciesTo sourceSets.integrationTest
 
 	mods {
-		beanification {
-			it.sourceSet this.sourceSets.combined
+		create("${this.project.mod_id}") { ModModel model ->
+			model.sourceSet this.sourceSets.main
+		}
+		create("${this.project.mod_id}-integration-test") { ModModel model ->
+			model.sourceSet this.sourceSets.integrationTest
 		}
 	}
 
+	def mainMod = mods."${this.project.mod_id}"
+	def integrationTestMod = mods."${this.project.mod_id}-integration-test"
+
 	unitTest {
 		enable()
-		testedMod = mods.beanification
+		testedMod = mainMod
+		loadedMods = [mainMod]
 	}
 
 	runs {
 		configureEach {
 			gameDirectory = project.file('run')
+			loadedMods = [mainMod]
 			systemProperty 'forge.logging.console.level', 'debug'
 			logLevel = org.slf4j.event.Level.DEBUG
 		}
 
-		client {
+		create('client') {
 			client()
-			sourceSet = this.sourceSets.integrationTest
-			systemProperty 'forge.enabledGameTestNamespaces', mod_id
+			loadedMods = [mainMod, integrationTestMod]
+			systemProperty 'forge.enabledGameTestNamespaces', this.project.mod_id
 			programArguments.addAll '--username', secrets.getProperty("username") ?: 'Dev', secrets.getProperty("uuid") ? '--uuid' : '', secrets.getProperty("uuid") ?: ''
 		}
 
-		server {
+		create('server') {
 			server()
-			systemProperty 'forge.enabledGameTestNamespaces', mod_id
+			systemProperty 'forge.enabledGameTestNamespaces', this.project.mod_id
 			programArgument '--nogui'
 		}
 
-		data {
-			data()
+		create('data') {
+			clientData()
 			gameDirectory = project.file('run-data')
-			programArguments.addAll '--mod', mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+			programArguments.addAll '--mod', this.project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
 		}
 	}
 }
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
 	gradlePluginPortal()
@@ -143,12 +137,13 @@ repositories {
 }
 
 dependencies {
-	implementation "mezz.jei:jei-${project.base_minecraft_version}-neoforge:${project.jei_version}"
+	implementation "mezz.jei:jei-${project.minecraft_version}-neoforge:${project.jei_version}"
 
 	testImplementation group: 'net.neoforged', name: 'testframework', version: project.neo_version
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.10.3'
-	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.10.3'
-	testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '5.12.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '6.0.1'
+	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '6.0.1'
+	testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-launcher', version: '6.0.1'
+	testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '5.21.0'
 
 	gradleImplementation(gradleApi())
 	gradleImplementation(localGroovy())
@@ -170,6 +165,7 @@ test {
 }
 
 jar {
+	exclude 'META-INF/neoforge.mods.toml'
 	manifest {
 		attributes([
 			'FMLModType'              : 'GAMELIBRARY',

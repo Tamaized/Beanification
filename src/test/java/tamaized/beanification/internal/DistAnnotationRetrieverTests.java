@@ -30,14 +30,15 @@ public class DistAnnotationRetrieverTests {
 	}
 
 	@Test
+	@SuppressWarnings("UnstableApiUsage")
 	public void retrieve() {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(scanData.getAnnotatedBy(Autowired.class, ElementType.FIELD)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, null, "a", Map.of("dist", list())),
 			new ModFileScanData.AnnotationData(null, null, null, "b", Map.of("dist", list(new Object()))),
-			new ModFileScanData.AnnotationData(null, null, null, "c", Map.of("dist", list(new ModAnnotation.EnumHolder(null, FMLEnvironment.dist.name())))),
-			new ModFileScanData.AnnotationData(null, null, null, "d", Map.of("dist", list(new ModAnnotation.EnumHolder(null, Dist.values()[(FMLEnvironment.dist.ordinal() + 1) % Dist.values().length].name())))),
-			new ModFileScanData.AnnotationData(null, null, null, "e", Map.of("dist", list(new Object(), new ModAnnotation.EnumHolder(null, FMLEnvironment.dist.name())))),
+			new ModFileScanData.AnnotationData(null, null, null, "c", Map.of("dist", list(new ModAnnotation.EnumHolder(null, FMLEnvironment.getDist().name())))),
+			new ModFileScanData.AnnotationData(null, null, null, "d", Map.of("dist", list(new ModAnnotation.EnumHolder(null, Dist.values()[(FMLEnvironment.getDist().ordinal() + 1) % Dist.values().length].name())))),
+			new ModFileScanData.AnnotationData(null, null, null, "e", Map.of("dist", list(new Object(), new ModAnnotation.EnumHolder(null, FMLEnvironment.getDist().name())))),
 			new ModFileScanData.AnnotationData(null, null, null, "f", Map.of("dist", new Object())),
 			new ModFileScanData.AnnotationData(null, null, null, "g", Map.of())
 		));

@@ -13,6 +13,16 @@ If there's a Minecraft version with a breaking change that requires a new versio
 - Redistribution of this library as a standalone product is prohibited.
 - Attribution is not required.
 
+## Version Table
+
+| MC Version       | Version | Tested |
+|------------------|---------|--------|
+| 26.1-snapshot    | 1.7.X   | ✅      |
+| 1.21.5 - 1.21.11 | 1.6.X   | ❌      |
+| 1.21.1 - 1.21.4  | 1.6.X   | ✅      |
+| 1.20.2 - 1.21.0  | 1.6.X   | ❌      |
+
+
 ## Gradle
 - ModDevGradle is recommended.
   - (version 2.0.76 is being used for this example)

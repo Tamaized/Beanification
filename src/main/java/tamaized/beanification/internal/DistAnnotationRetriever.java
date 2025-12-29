@@ -1,7 +1,7 @@
 package tamaized.beanification.internal;
 
-import cpw.mods.jarhandling.SecureJar;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
@@ -12,6 +12,7 @@ import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.nio.file.Path;
@@ -33,18 +34,22 @@ public class DistAnnotationRetriever {
 			return Optional.ofNullable(cachedBeanificationScan.get());
 		}
 
-		FMLLoader.getGameLayer().configuration().modules().stream().filter(r -> r.name().equals("beanification")).findAny().ifPresentOrElse(module -> {
-			SecureJar jar = SecureJar.from(Path.of(module.reference().location().orElseThrow()));
-			ModFile modFile = new ModFile(jar, file -> null, new ModFileDiscoveryAttributes(null, null, null, null));
-			ModFileScanData result = new Scanner(modFile).scan();
-			cachedBeanificationScan = () -> result;
+		FMLLoader.getCurrent().getGameLayer().configuration().modules().stream().filter(r -> r.name().equals("beanification")).findAny().ifPresentOrElse(module -> {
+			try {
+				JarContents jar = JarContents.ofPath(Path.of(module.reference().location().orElseThrow()));
+				ModFile modFile = new ModFile(jar, _ -> null, new ModFileDiscoveryAttributes(null, null, null, null));
+				ModFileScanData result = new Scanner(modFile).scan();
+				cachedBeanificationScan = () -> result;
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}, () -> cachedBeanificationScan = () -> null);
 
 		return Optional.ofNullable(cachedBeanificationScan.get());
 	}
 
 	@SafeVarargs
-	@SuppressWarnings({"UseBulkOperation", "ManualArrayToCollectionCopy"})
+	@SuppressWarnings({"UseBulkOperation", "ManualArrayToCollectionCopy", "UnstableApiUsage"})
 	public final Stream<ModFileScanData.AnnotationData> retrieve(ModFileScanData scanData, ElementType elementType, Class<? extends Annotation>... types) {
 		List<Class<? extends Annotation>> t = new ArrayList<>();
 		for (Class<? extends Annotation> type : types) {
@@ -58,7 +63,7 @@ public class DistAnnotationRetriever {
 				if (list.isEmpty())
 					return true;
 				for (Object o : list) {
-					if (o instanceof ModAnnotation.EnumHolder e && Dist.valueOf(e.value()) == FMLEnvironment.dist) {
+					if (o instanceof ModAnnotation.EnumHolder e && Dist.valueOf(e.value()) == FMLEnvironment.getDist()) {
 						return true;
 					}
 				}
