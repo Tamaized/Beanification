@@ -57,7 +57,7 @@ repositories {
 
 dependencies {
 	...
-	def beanification = "tamaized:beanification:${project.minecraft_version}-${project.beanification_version}"
+	def beanification = "tamaized:beanification:${project.beanification_version}"
 	implementation beanification
 	shade beanification
 	testImplementation "${beanification}:tests"
@@ -133,7 +133,7 @@ buildscript {
 		}
 	}
 	dependencies {
-		classpath "tamaized:beanification:${minecraft_version}-${beanification_version}:gradle"
+		classpath "tamaized:beanification:${beanification_version}:gradle"
 	}
 }
 
