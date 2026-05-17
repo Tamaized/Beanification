@@ -34,12 +34,13 @@ class BeanificationPlugin implements Plugin<Project> {
 
 			it.doLast {
 				outputDirs.get().each {outputDir ->
-					println "Processing ${outputDir.name}"
+					println "Processing Dir: ${outputDir.name}"
 					FileTree tree = outputDir.ideOutputDir != null ? outputDir.ideOutputDir : outputDir.gradleOutputDir.asFileTree
-					println tree
+					println "Tree (IDEA): ${tree}"
 					tree.matching {
 						it.include '**/*.class'
 					}.each { file ->
+						println "Processing: ${file.getName()}"
 						CompileTimeTransformer.processClassFile(file)
 					}
 				}
@@ -67,10 +68,11 @@ class BeanificationPlugin implements Plugin<Project> {
 			}
 			it.doLast {
 				def tree = outputDir.get().asFileTree
-				println tree
+				println "Tree (Classes): ${tree}"
 				tree.matching {
 					it.include '**/*.class'
 				}.each { file ->
+					println "Processing: ${file.getName()}"
 					CompileTimeTransformer.processClassFile(file)
 				}
 				//outputFile.text = "${new Date()}"

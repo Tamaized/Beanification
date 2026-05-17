@@ -1,11 +1,11 @@
 package tamaized.beanification.gradle.asm;
 
-import groovyjarjarasm.asm.Opcodes;
-import groovyjarjarasm.asm.tree.ClassNode;
-import groovyjarjarasm.asm.tree.MethodInsnNode;
-import groovyjarjarasm.asm.tree.VarInsnNode;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.StreamSupport;

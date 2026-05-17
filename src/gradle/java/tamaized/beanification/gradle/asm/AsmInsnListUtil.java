@@ -1,7 +1,7 @@
 package tamaized.beanification.gradle.asm;
 
-import groovyjarjarasm.asm.tree.AbstractInsnNode;
-import groovyjarjarasm.asm.tree.InsnList;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.InsnList;
 
 public class AsmInsnListUtil {
 
