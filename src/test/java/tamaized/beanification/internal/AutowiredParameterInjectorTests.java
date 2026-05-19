@@ -37,6 +37,7 @@ public class AutowiredParameterInjectorTests {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void inject() {
 		TestBean depBean = new TestBean();
 

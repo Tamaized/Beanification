@@ -52,7 +52,10 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 		}
 		list.stream()
 			.sorted(Comparator.comparingInt(Data::priority))
-			.forEach(data -> context.gather().orElseThrow().put(data.definition, data.factory));
+			.forEach(data -> {
+				if (context.gather().orElseThrow().putIfAbsent(data.definition, data.factory) != null)
+					throw new IllegalStateException("Duplicate bean detected - " + data.definition);
+			});
 	}
 
 	private record Data(int priority, BeanDefinition<?> definition, BeanContext.ThrowingSupplier<Object> factory) {

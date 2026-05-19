@@ -79,6 +79,41 @@ public class BeanAnnotationGatherBeanProcessorTests {
 	}
 
 	@Test
+	public void processDuplicate() throws Throwable {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
+		));
+
+		Method target = mock(Method.class);
+
+		Bean bean = mock(Bean.class);
+		when(bean.value()).thenReturn(Component.DEFAULT_VALUE);
+		when(target.getAnnotation(Bean.class)).thenReturn(bean);
+		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
+
+		TestBean beanInstance = new TestBean();
+		when(target.getParameterCount()).thenReturn(0);
+		when(target.invoke(null)).thenReturn(beanInstance);
+		doReturn(TestBean.class).when(target).getReturnType();
+
+		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target, target));
+		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
+
+		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
+		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
+		when(context.gather()).thenReturn(Optional.of(gatherMap));
+
+		ModContainer modContainer = mock(ModContainer.class);
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+
+		assertEquals("Duplicate bean detected - {Type: Ltamaized/beanification/TestBean;, Name: null}", exception.getMessage());
+
+		assertFalse(gatherMap.isEmpty());
+	}
+
+	@Test
 	public void processNamed() throws Throwable {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(

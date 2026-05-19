@@ -27,25 +27,34 @@ public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 		List<Data> list = new ArrayList<>();
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
-			Method method = internalReflectionHelper.getDeclaredMethod(Class.forName(data.clazz().getClassName()), data.memberName());
-			method.trySetAccessible();
-			if (!internalReflectionHelper.isStatic(method))
-				throw new IllegalStateException("@Bean methods must be static");
-			Bean annotation = method.getAnnotation(Bean.class);
-			String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
+			internalReflectionHelper.getDeclaredMethodsForName(Class.forName(data.clazz().getClassName()), data.memberName()).stream()
+				.filter(method -> method.isAnnotationPresent(Bean.class))
+				.forEach(method -> {
+					method.trySetAccessible();
+					if (!internalReflectionHelper.isStatic(method))
+						throw new IllegalStateException("@Bean methods must be static");
+					Bean annotation = method.getAnnotation(Bean.class);
+					String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
 
-			if (method.getParameterCount() > 0) {
-				List<BeanDefinition<?>> deps = new ArrayList<>();
-				for (Parameter parameter : method.getParameters()) {
-					String unresolvedName = parameter.getAnnotation(Autowired.class).value();
-					deps.add(new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName));
-				}
-				list.add(new Data(annotation.priority(), new BeanDefinition<>(method.getReturnType(), name), deps));
-			}
+					if (method.getParameterCount() > 0) {
+						if (!internalReflectionHelper.allParametersHaveAnnotation(method.getParameterAnnotations(), Autowired.class)) {
+							throw new IllegalStateException("@Bean method parameters must be annotated with @Autowired");
+						}
+						List<BeanDefinition<?>> deps = new ArrayList<>();
+						for (Parameter parameter : method.getParameters()) {
+							String unresolvedName = parameter.getAnnotation(Autowired.class).value();
+							deps.add(new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName));
+						}
+						list.add(new Data(annotation.priority(), new BeanDefinition<>(method.getReturnType(), name), deps));
+					}
+				});
 		}
 		list.stream()
 			.sorted(Comparator.comparingInt(Data::priority))
-			.forEach(data -> context.dependencies().orElseThrow().put(data.definition, data.deps));
+			.forEach(data -> {
+				if (context.dependencies().orElseThrow().putIfAbsent(data.definition, data.deps) != null)
+					throw new IllegalStateException("Duplicate bean detected - " + data.definition);
+			});
 	}
 
 	private record Data(int priority, BeanDefinition<?> definition, List<BeanDefinition<?>> deps) {

@@ -14,4 +14,9 @@ public record BeanDefinition<T>(Class<T> type, @Nullable String name) {
 	public boolean equals(Object o) {
 		return o instanceof BeanDefinition<?>(Class<?> typeOther, String nameOther) && type.equals(typeOther) && Objects.equals(name, nameOther);
 	}
+
+	@Override
+	public String toString() {
+		return "{Type: %s, Name: %s}".formatted(type.descriptorString(), name);
+	}
 }
