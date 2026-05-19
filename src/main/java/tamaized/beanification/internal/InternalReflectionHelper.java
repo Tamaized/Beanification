@@ -9,6 +9,7 @@ import tamaized.beanification.Directory;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -82,8 +83,16 @@ public class InternalReflectionHelper {
 		return clazz.getDeclaredField(name);
 	}
 
+	private String trimMethodName(String raw) {
+		return raw.split("\\(")[0];
+	}
+
 	public Method getDeclaredMethod(Class<?> clazz, String name, @Nullable Class<?>... args) throws NoSuchMethodException {
-		return clazz.getDeclaredMethod(name.split("\\(")[0], args);
+		return clazz.getDeclaredMethod(trimMethodName(name), args);
+	}
+
+	public List<Method> getDeclaredMethodsForName(Class<?> clazz, String name) {
+		return Arrays.stream(clazz.getDeclaredMethods()).filter(m -> m.getName().equals(trimMethodName(name))).toList();
 	}
 
 	public Type getType(Class<?> c) {

@@ -3,6 +3,7 @@ package tamaized.beanification.processors.gather;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
+import tamaized.beanification.internal.AutowiredParameterInjector;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.processors.BeanProcessor;
@@ -21,29 +22,33 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
 
+	@InternalAutowired
+	private AutowiredParameterInjector autowiredParameterInjector;
+
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
 		List<Data> list = new ArrayList<>();
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
-			Method method = internalReflectionHelper.getDeclaredMethod(Class.forName(data.clazz().getClassName()), data.memberName());
-			method.trySetAccessible();
-			if (!internalReflectionHelper.isStatic(method))
-				throw new IllegalStateException("@Bean methods must be static");
-			Bean annotation = method.getAnnotation(Bean.class);
-			String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
-			list.add(new Data(annotation.priority(), new BeanDefinition<>(method.getReturnType(), name), () -> {
-				if (method.getParameterCount() == 0) {
-					return method.invoke(null);
-				} else {
-					return method.invoke(null, Arrays.stream(method.getParameters()).map(p -> {
-						String unresolvedName = p.getAnnotation(Autowired.class).value();
-						BeanDefinition<?> depDef = new BeanDefinition<>(p.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName);
-						context.currentInjection().orElseThrow().set(method);
-						return context.injector().orElseThrow().apply(depDef);
-					}).toArray());
-				}
-			}));
+			internalReflectionHelper.getDeclaredMethodsForName(Class.forName(data.clazz().getClassName()), data.memberName()).stream()
+				.filter(method -> method.isAnnotationPresent(Bean.class))
+				.forEach(method -> {
+					method.trySetAccessible();
+					if (!internalReflectionHelper.isStatic(method))
+						throw new IllegalStateException("@Bean methods must be static");
+					Bean annotation = method.getAnnotation(Bean.class);
+					String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
+					list.add(new Data(annotation.priority(), new BeanDefinition<>(method.getReturnType(), name), () -> {
+						if (method.getParameterCount() == 0) {
+							return method.invoke(null);
+						} else {
+							if (!internalReflectionHelper.allParametersHaveAnnotation(method.getParameterAnnotations(), Autowired.class)) {
+								throw new IllegalStateException("@Bean method parameters must be annotated with @Autowired");
+							}
+							return method.invoke(null, autowiredParameterInjector.inject(context, method.getParameters(), method));
+						}
+					}));
+				});
 		}
 		list.stream()
 			.sorted(Comparator.comparingInt(Data::priority))

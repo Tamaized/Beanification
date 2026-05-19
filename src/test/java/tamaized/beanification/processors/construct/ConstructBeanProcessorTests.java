@@ -6,26 +6,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.objectweb.asm.Type;
 import tamaized.beanification.*;
-import tamaized.beanification.internal.DistAnnotationRetriever;
-import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
-import tamaized.beanification.processors.gather.BeanAnnotationGatherBeanProcessor;
 
-import java.lang.annotation.ElementType;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;

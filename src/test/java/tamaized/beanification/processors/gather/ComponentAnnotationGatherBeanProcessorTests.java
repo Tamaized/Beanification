@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.objectweb.asm.Type;
 import tamaized.beanification.*;
+import tamaized.beanification.internal.AutowiredParameterInjector;
 import tamaized.beanification.internal.BeanConstructorLocater;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
@@ -38,6 +39,9 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 
 	@Mock
 	private BeanConstructorLocater beanConstructorLocater;
+
+	@Mock
+	private AutowiredParameterInjector autowiredParameterInjector;
 
 	@InjectMocks
 	private ComponentAnnotationGatherBeanProcessor instance;
@@ -140,17 +144,13 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
-		AtomicReference<Object> refMock = mock(AtomicReference.class);
-		when(context.currentInjection()).thenReturn(Optional.of(refMock));
-		when(context.injector()).thenReturn(Optional.of(def -> depBean));
+
+		when(autowiredParameterInjector.inject(context, parameters, constructor)).thenReturn(new Object[] {depBean, depBean});
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(resultBean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
-		verify(context, times(2)).currentInjection();
-		verify(refMock, times(2)).set(constructor);
-		verify(context, times(2)).injector();
 	}
 
 }

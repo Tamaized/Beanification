@@ -8,16 +8,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.objectweb.asm.Type;
 import tamaized.beanification.*;
+import tamaized.beanification.internal.AutowiredParameterInjector;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,6 +38,9 @@ public class BeanAnnotationGatherBeanProcessorTests {
 	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
 
+	@Mock
+	private AutowiredParameterInjector autowiredParameterInjector;
+
 	@InjectMocks
 	private BeanAnnotationGatherBeanProcessor instance;
 
@@ -50,13 +56,14 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Bean bean = mock(Bean.class);
 		when(bean.value()).thenReturn(Component.DEFAULT_VALUE);
 		when(target.getAnnotation(Bean.class)).thenReturn(bean);
+		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		TestBean beanInstance = new TestBean();
 		when(target.getParameterCount()).thenReturn(0);
 		when(target.invoke(null)).thenReturn(beanInstance);
 		doReturn(TestBean.class).when(target).getReturnType();
 
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenReturn(target);
+		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
@@ -83,13 +90,14 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Bean bean = mock(Bean.class);
 		when(bean.value()).thenReturn("test");
 		when(target.getAnnotation(Bean.class)).thenReturn(bean);
+		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		TestBean beanInstance = new TestBean();
 		when(target.getParameterCount()).thenReturn(0);
 		when(target.invoke(null)).thenReturn(beanInstance);
 		doReturn(TestBean.class).when(target).getReturnType();
 
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenReturn(target);
+		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
@@ -117,7 +125,6 @@ public class BeanAnnotationGatherBeanProcessorTests {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void processWithArgs() throws Throwable {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
@@ -129,6 +136,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Bean bean = mock(Bean.class);
 		when(bean.value()).thenReturn(Component.DEFAULT_VALUE);
 		when(target.getAnnotation(Bean.class)).thenReturn(bean);
+		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		TestBean depBean = new TestBean();
 		TestBean beanInstance = new TestBean();
@@ -141,15 +149,17 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		when(target.invoke(null, depBean, depBean)).thenReturn(beanInstance);
 		doReturn(TestBean.class).when(target).getReturnType();
 
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenReturn(target);
+		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
-		AtomicReference<Object> refMock = mock(AtomicReference.class);
-		when(context.currentInjection()).thenReturn(Optional.of(refMock));
-		when(context.injector()).thenReturn(Optional.of(def -> depBean));
+
+		when(autowiredParameterInjector.inject(context, parameters, target)).thenReturn(new Object[] {depBean, depBean});
+
+		when(target.getParameterAnnotations()).thenReturn(new Annotation[0][0]);
+		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class)).thenReturn(true);
 
 		ModContainer modContainer = mock(ModContainer.class);
 
@@ -157,9 +167,54 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		assertEquals(1, gatherMap.size());
 		assertSame(beanInstance, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
-		verify(context, times(2)).currentInjection();
-		verify(refMock, times(2)).set(target);
-		verify(context, times(2)).injector();
+	}
+
+	@Test
+	public void processWithArgsMissingAutowired() throws Throwable {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
+		));
+
+		Method target = mock(Method.class);
+
+		Bean bean = mock(Bean.class);
+		when(bean.value()).thenReturn(Component.DEFAULT_VALUE);
+		when(target.getAnnotation(Bean.class)).thenReturn(bean);
+		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
+
+		TestBean depBean = new TestBean();
+		TestBean beanInstance = new TestBean();
+		when(target.getParameterCount()).thenReturn(2);
+		Parameter[] parameters = new Parameter[]{
+			mockParam("p1"),
+			mockParam("p2")
+		};
+		when(target.getParameters()).thenReturn(parameters);
+		when(target.invoke(null, depBean, depBean)).thenReturn(beanInstance);
+		doReturn(TestBean.class).when(target).getReturnType();
+
+		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
+		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
+
+		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
+		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
+		when(context.gather()).thenReturn(Optional.of(gatherMap));
+
+		when(autowiredParameterInjector.inject(context, parameters, target)).thenReturn(new Object[] {depBean, depBean});
+
+		when(target.getParameterAnnotations()).thenReturn(new Annotation[0][0]);
+		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class)).thenReturn(false);
+
+		ModContainer modContainer = mock(ModContainer.class);
+
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+
+		assertEquals(1, gatherMap.size());
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
+
+		assertEquals("@Bean method parameters must be annotated with @Autowired", exception.getMessage());
 	}
 
 	@Test
@@ -172,13 +227,14 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Bean bean = mock(Bean.class);
 		when(bean.value()).thenReturn(Component.DEFAULT_VALUE);
 		when(target.getAnnotation(Bean.class)).thenReturn(bean);
+		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		TestBean beanInstance = new TestBean();
 		when(target.getParameterCount()).thenReturn(0);
 		when(target.invoke(null)).thenReturn(beanInstance);
 		doReturn(TestBean.class).when(target).getReturnType();
 
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenReturn(target);
+		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
@@ -204,13 +260,14 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Bean bean = mock(Bean.class);
 		when(bean.value()).thenReturn(Component.DEFAULT_VALUE);
 		when(target.getAnnotation(Bean.class)).thenReturn(bean);
+		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		TestBean beanInstance = new TestBean();
 		when(target.getParameterCount()).thenReturn(0);
 		when(target.invoke(null)).thenReturn(beanInstance);
 		doReturn(TestBean.class).when(target).getReturnType();
 
-		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method")).thenReturn(target);
+		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
 		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
@@ -222,6 +279,31 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
 
 		assertEquals("@Bean methods must be static", exception.getMessage());
+
+		assertTrue(gatherMap.isEmpty());
+	}
+
+	@Test
+	public void processMissingBeanAnnotation() {
+		ModFileScanData scanData = mock(ModFileScanData.class);
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
+			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
+		));
+
+		Method target = mock(Method.class);
+
+		when(target.isAnnotationPresent(Bean.class)).thenReturn(false);
+
+		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
+		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
+
+		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
+		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
+		when(context.gather()).thenReturn(Optional.of(gatherMap));
+
+		ModContainer modContainer = mock(ModContainer.class);
+
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
 		assertTrue(gatherMap.isEmpty());
 	}

@@ -10,6 +10,7 @@ import tamaized.beanification.junit.MockitoRunner;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,11 +24,36 @@ public class InternalReflectionHelperTests {
 	public void getDeclaredMethod() {
 		Method method = assertDoesNotThrow(() -> instance.getDeclaredMethod(InternalReflectionHelperTests.class, "testMethod(LRandomJunk;)V"));
 
+		assertNotNull(method);
 		assertEquals("testMethod", method.getName());
+		assertEquals(0, method.getParameterCount());
+	}
+
+	@Test
+	public void getDeclaredMethodWithParam() {
+		Method method = assertDoesNotThrow(() -> instance.getDeclaredMethod(InternalReflectionHelperTests.class, "testMethod(LRandomJunk;)V", String.class));
+
+		assertNotNull(method);
+		assertEquals("testMethod", method.getName());
+		assertEquals(1, method.getParameterCount());
+		assertEquals(String.class, method.getParameters()[0].getType());
+	}
+
+	@Test
+	public void getDeclaredMethodsForName() {
+		List<Method> methods = assertDoesNotThrow(() -> instance.getDeclaredMethodsForName(InternalReflectionHelperTests.class, "testMethod(LRandomJunk;)V"));
+
+		assertNotNull(methods);
+		assertEquals(2, methods.size());
 	}
 
 	@SuppressWarnings("unused")
 	private void testMethod() {
+
+	}
+
+	@SuppressWarnings("unused")
+	private void testMethod(String test) {
 
 	}
 

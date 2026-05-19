@@ -11,7 +11,9 @@ import java.lang.annotation.Target;
  * Annotated static methods will automatically be invoked and the returned object will be registered to {@link tamaized.beanification.BeanContext}.<p/>
  *
  * The returned object class can extend/implement the method return type. The method return type is what's used for bean identification.<br/>
- * This for example allows for interfaces to be used as beans.
+ * This for example allows for interfaces to be used as beans.<p/>
+ *
+ * Parameters must be annotated with {@link Autowired}
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

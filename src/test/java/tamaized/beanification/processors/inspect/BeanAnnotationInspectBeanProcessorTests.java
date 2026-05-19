@@ -12,7 +12,6 @@ import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
-import tamaized.beanification.processors.gather.BeanAnnotationGatherBeanProcessor;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;
