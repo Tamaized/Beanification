@@ -1,7 +1,6 @@
 package tamaized.beanification;
 
 import net.neoforged.api.distmarker.Dist;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -25,7 +24,6 @@ import java.lang.annotation.Target;
  * Record constructor injection will still work.
  * </p>
  */
-@Nullable
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Autowired {
