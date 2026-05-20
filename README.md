@@ -12,7 +12,7 @@
 
 | MC Version       | Version | Tested |
 |------------------|---------|--------|
-| 26.1-snapshot    | 1.7.X   | ✅      |
+| 26.1    | 1.8.X   | ✅      |
 | 1.21.5 - 1.21.11 | 1.6.X   | ❌      |
 | 1.21.1 - 1.21.4  | 1.6.X   | ✅      |
 | 1.20.2 - 1.21.0  | 1.6.X   | ❌      |
@@ -110,11 +110,12 @@ public class YourMod {
 }
 ```
 For further details, view the javadoc for:
-- Autowired
-- Bean
-- Component
-- PostConstruct
-- Configurable
+- [Autowired](src/main/java/tamaized/beanification/Autowired.java)
+- [Directory](src/main/java/tamaized/beanification/Directory.java)
+- [Component](src/main/java/tamaized/beanification/Component.java)
+- [Bean](src/main/java/tamaized/beanification/Bean.java)
+- [PostConstruct](src/main/java/tamaized/beanification/PostConstruct.java)
+- [Configurable](src/main/java/tamaized/beanification/Configurable.java)
 
 ## Enable `@Configurable`
 ### ModDevGradle 2.0.X is required
