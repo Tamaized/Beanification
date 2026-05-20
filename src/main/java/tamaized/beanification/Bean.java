@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  * The returned object class can extend/implement the method return type. The method return type is what's used for bean identification.<br/>
  * This for example allows for interfaces to be used as beans.<p/>
  *
- * Parameters must be annotated with {@link Autowired}
+ * Parameters must be annotated with {@link Autowired} or {@link Directory}
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
