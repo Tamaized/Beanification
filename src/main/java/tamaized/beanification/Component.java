@@ -12,9 +12,9 @@ import java.lang.annotation.Target;
  * Annotated classes will be automatically registered to {@link tamaized.beanification.BeanContext}.
  * </p>
  * <p>
- * Requires a no-arg constructor or a constructor with only {@link Autowired} parameters.<br/>
- * If two valid constructors are found then the constructor with {@link Autowired} parameters will be prioritized.<br/>
- * If multiple constructors contain {@link Autowired} parameters then {@link IllegalArgumentException} will be thrown.
+ * Requires a no-arg constructor or a constructor with only {@link Autowired} or {@link Directory} parameters.<br/>
+ * If two valid constructors are found then the constructor with {@link Autowired} or {@link Directory} parameters will be prioritized.<br/>
+ * If multiple constructors contain {@link Autowired} or {@link Directory} parameters then {@link IllegalArgumentException} will be thrown.
  * </p>
  */
 @Target(ElementType.TYPE)

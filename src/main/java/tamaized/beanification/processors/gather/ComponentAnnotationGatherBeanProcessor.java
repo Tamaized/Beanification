@@ -3,10 +3,7 @@ package tamaized.beanification.processors.gather;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
-import tamaized.beanification.internal.AutowiredParameterInjector;
-import tamaized.beanification.internal.BeanConstructorLocater;
-import tamaized.beanification.internal.DistAnnotationRetriever;
-import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.*;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
@@ -29,7 +26,7 @@ public class ComponentAnnotationGatherBeanProcessor implements IBeanProcessor {
 	private BeanConstructorLocater beanConstructorLocater;
 
 	@InternalAutowired
-	private AutowiredParameterInjector autowiredParameterInjector;
+	private ConjoinedParameterInjector conjoinedParameterInjector;
 
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
@@ -44,7 +41,7 @@ public class ComponentAnnotationGatherBeanProcessor implements IBeanProcessor {
 			context.gather().orElseThrow().put(new BeanDefinition<>(c, name), () -> {
 				if (ctor.getParameterCount() == 0)
 					return ctor.newInstance();
-				return ctor.newInstance(autowiredParameterInjector.inject(context, ctor.getParameters(), ctor));
+				return ctor.newInstance(conjoinedParameterInjector.inject(context, scanData, c, ctor.getParameters(), ctor));
 			});
 		}
 	}

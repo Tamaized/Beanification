@@ -18,8 +18,7 @@ import java.lang.annotation.Target;
  *     By default, packages will be scanned recursively.
  * </p>
  * <p>
- *     Follows all the same rules as {@link Autowired}<br/>
- *     <b>Constructor injection does not work</b>
+ *     Follows all the same rules as {@link Autowired}
  * </p>
  */
 @Target({ElementType.FIELD, ElementType.PARAMETER})

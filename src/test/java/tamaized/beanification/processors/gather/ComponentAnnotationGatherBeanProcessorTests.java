@@ -8,10 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.objectweb.asm.Type;
 import tamaized.beanification.*;
-import tamaized.beanification.internal.AutowiredParameterInjector;
-import tamaized.beanification.internal.BeanConstructorLocater;
-import tamaized.beanification.internal.DistAnnotationRetriever;
-import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.*;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 
@@ -41,7 +38,7 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 	private BeanConstructorLocater beanConstructorLocater;
 
 	@Mock
-	private AutowiredParameterInjector autowiredParameterInjector;
+	private ConjoinedParameterInjector conjoinedParameterInjector;
 
 	@InjectMocks
 	private ComponentAnnotationGatherBeanProcessor instance;
@@ -145,7 +142,7 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		when(autowiredParameterInjector.inject(context, parameters, constructor)).thenReturn(new Object[] {depBean, depBean});
+		when(conjoinedParameterInjector.inject(context, scanData, TestBean.class, parameters, constructor)).thenReturn(new Object[] {depBean, depBean});
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 

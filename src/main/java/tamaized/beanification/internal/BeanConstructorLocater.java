@@ -2,6 +2,7 @@ package tamaized.beanification.internal;
 
 import org.jetbrains.annotations.ApiStatus;
 import tamaized.beanification.Autowired;
+import tamaized.beanification.Directory;
 import tamaized.beanification.InternalAutowired;
 
 import java.lang.reflect.Constructor;
@@ -19,7 +20,7 @@ public class BeanConstructorLocater {
 			if (targetConstructor == null && constructor.getParameterCount() == 0)
 				targetConstructor = constructor;
 			else {
-				if (internalReflectionHelper.allParametersHaveAnnotation(constructor.getParameterAnnotations(), Autowired.class)) {
+				if (internalReflectionHelper.allParametersHaveAnnotation(constructor.getParameterAnnotations(), Autowired.class, Directory.class)) {
 					if (hasAutowiredCtor) {
 						throw new IllegalArgumentException("Conflicting Constructors found: " + constructor.toGenericString() + " and " + targetConstructor.toGenericString());
 					} else {
@@ -31,7 +32,7 @@ public class BeanConstructorLocater {
 		}
 
 		if (targetConstructor == null) {
-			throw new IllegalStateException("Could not find any Constructors in class " + c);
+			throw new IllegalStateException("Could not find any Constructors in class: " + c);
 		}
 
 		return targetConstructor;

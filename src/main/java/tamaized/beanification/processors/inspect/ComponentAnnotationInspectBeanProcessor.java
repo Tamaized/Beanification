@@ -6,6 +6,7 @@ import tamaized.beanification.*;
 import tamaized.beanification.internal.BeanConstructorLocater;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.ListInjector;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
@@ -26,6 +27,9 @@ public class ComponentAnnotationInspectBeanProcessor implements IBeanProcessor {
 	@InternalAutowired
 	private BeanConstructorLocater beanConstructorLocater;
 
+	@InternalAutowired
+	private ListInjector listInjector;
+
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class).iterator(); it.hasNext(); ) {
@@ -39,8 +43,13 @@ public class ComponentAnnotationInspectBeanProcessor implements IBeanProcessor {
 			if (ctor.getParameterCount() > 0) {
 				List<BeanDefinition<?>> deps = new ArrayList<>();
 				for (Parameter parameter : ctor.getParameters()) {
-					String unresolvedName = parameter.getAnnotation(Autowired.class).value();
-					deps.add(new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName));
+					if (parameter.isAnnotationPresent(Autowired.class)) {
+						String unresolvedName = parameter.getAnnotation(Autowired.class).value();
+						deps.add(new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName));
+					} else if (parameter.isAnnotationPresent(Directory.class)) {
+						Directory directoryAnnotation = parameter.getAnnotation(Directory.class);
+						deps.addAll(listInjector.gather(scanData, c, directoryAnnotation.value(), directoryAnnotation.recursive()));
+					}
 				}
 				context.dependencies().orElseThrow().put(new BeanDefinition<>(c, name), deps);
 			}
