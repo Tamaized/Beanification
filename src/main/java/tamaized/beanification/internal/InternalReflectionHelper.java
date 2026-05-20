@@ -107,11 +107,17 @@ public class InternalReflectionHelper {
 		return c.getConstructor(p);
 	}
 
-	public boolean allParametersHaveAnnotation(Annotation[][] parameterAnnotations, Class<? extends Annotation> annotationClass) {
+	@SafeVarargs
+	@SuppressWarnings({"ManualArrayToCollectionCopy", "UseBulkOperation"})
+	public final boolean allParametersHaveAnnotation(Annotation[][] parameterAnnotations, Class<? extends Annotation>... annotationClass) {
+		List<Class<? extends Annotation>> annotationClassList = new ArrayList<>();
+		for (Class<? extends Annotation> aClass : annotationClass) {
+			annotationClassList.add(aClass);
+		}
 		for (Annotation[] annotations : parameterAnnotations) {
 			boolean hasAnnotation = false;
 			for (Annotation annotation : annotations) {
-				if (annotation.annotationType().equals(annotationClass)) {
+				if (annotationClassList.contains(annotation.annotationType())) {
 					hasAnnotation = true;
 					break;
 				}

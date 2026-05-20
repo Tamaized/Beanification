@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import tamaized.beanification.Autowired;
 import tamaized.beanification.Component;
+import tamaized.beanification.Directory;
+import tamaized.beanification.TestBean;
 import tamaized.beanification.junit.MockitoRunner;
 
 import java.lang.annotation.Annotation;
@@ -67,6 +69,15 @@ public class InternalReflectionHelperTests {
 	}
 
 	@Test
+	public void allParametersHaveAnnotationMultiTrue() {
+		assertTrue(instance.allParametersHaveAnnotation(new Annotation[][]{
+			new Annotation[]{makeAutowired()},
+			new Annotation[]{makeAutowired(), makeComponent()},
+			new Annotation[]{makeComponent(), makeDirectory()},
+		}, Autowired.class, Directory.class));
+	}
+
+	@Test
 	public void allParametersHaveAnnotationFalse() {
 		assertFalse(instance.allParametersHaveAnnotation(new Annotation[][]{
 			new Annotation[]{},
@@ -124,6 +135,27 @@ public class InternalReflectionHelperTests {
 			public Dist[] dist() {
 				return new Dist[0];
 			}
+		};
+	}
+
+	private Directory makeDirectory() {
+		return new Directory() {
+
+			@Override
+			public Class<? extends Annotation> annotationType() {
+				return Directory.class;
+			}
+
+			@Override
+			public Class<?> value() {
+				return TestBean.class;
+			}
+
+			@Override
+			public boolean recursive() {
+				return false;
+			}
+
 		};
 	}
 

@@ -11,7 +11,8 @@ import java.util.Objects;
 @ApiStatus.Internal
 public class ListInjector {
 
-	public List<?> inject(BeanContext.BeanLifeCycleContext context, ModFileScanData scanData, Class<?> parent, Class<?> classFilter, boolean recursive) {
+	@SuppressWarnings("unchecked")
+	public <T> List<? extends BeanDefinition<? extends T>> gather(ModFileScanData scanData, Class<?> parent, Class<T> classFilter, boolean recursive) {
 		return scanData.getClasses().stream()
 			.filter(data -> {
 				String pkg = data.clazz().getInternalName().replaceAll("/", ".");
@@ -26,7 +27,13 @@ public class ListInjector {
 				}
 			})
 			.filter(classFilter::isAssignableFrom)
+			.map(data -> (Class<? extends T>) data)
 			.map(data -> new BeanDefinition<>(data, null))
+			.toList();
+	}
+
+	public List<Object> inject(BeanContext.BeanLifeCycleContext context, ModFileScanData scanData, Class<?> parent, Class<?> classFilter, boolean recursive) {
+		return gather(scanData, parent, classFilter, recursive).stream()
 			.map(data -> context.injector().orElseThrow().apply(data))
 			.filter(Objects::nonNull)
 			.toList();

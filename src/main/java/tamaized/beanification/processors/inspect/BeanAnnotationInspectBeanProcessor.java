@@ -5,6 +5,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.ListInjector;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
@@ -22,12 +23,16 @@ public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
 
+	@InternalAutowired
+	private ListInjector listInjector;
+
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
 		List<Data> list = new ArrayList<>();
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
-			internalReflectionHelper.getDeclaredMethodsForName(Class.forName(data.clazz().getClassName()), data.memberName()).stream()
+			Class<?> parent = Class.forName(data.clazz().getClassName());
+			internalReflectionHelper.getDeclaredMethodsForName(parent, data.memberName()).stream()
 				.filter(method -> method.isAnnotationPresent(Bean.class))
 				.forEach(method -> {
 					method.trySetAccessible();
@@ -37,13 +42,18 @@ public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 					String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
 
 					if (method.getParameterCount() > 0) {
-						if (!internalReflectionHelper.allParametersHaveAnnotation(method.getParameterAnnotations(), Autowired.class)) {
-							throw new IllegalStateException("@Bean method parameters must be annotated with @Autowired");
+						if (!internalReflectionHelper.allParametersHaveAnnotation(method.getParameterAnnotations(), Autowired.class, Directory.class)) {
+							throw new IllegalStateException("@Bean method parameters must be annotated with @Autowired or @Directory");
 						}
 						List<BeanDefinition<?>> deps = new ArrayList<>();
 						for (Parameter parameter : method.getParameters()) {
-							String unresolvedName = parameter.getAnnotation(Autowired.class).value();
-							deps.add(new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName));
+							if (parameter.isAnnotationPresent(Autowired.class)) {
+								String unresolvedName = parameter.getAnnotation(Autowired.class).value();
+								deps.add(new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName));
+							} else if (parameter.isAnnotationPresent(Directory.class)) {
+								Directory directoryAnnotation = parameter.getAnnotation(Directory.class);
+								deps.addAll(listInjector.gather(scanData, parent, directoryAnnotation.value(), directoryAnnotation.recursive()));
+							}
 						}
 						list.add(new Data(annotation.priority(), new BeanDefinition<>(method.getReturnType(), name), deps));
 					}

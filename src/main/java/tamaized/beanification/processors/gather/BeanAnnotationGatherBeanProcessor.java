@@ -4,6 +4,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.AutowiredParameterInjector;
+import tamaized.beanification.internal.ConjoinedParameterInjector;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.processors.BeanProcessor;
@@ -23,14 +24,15 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 	private InternalReflectionHelper internalReflectionHelper;
 
 	@InternalAutowired
-	private AutowiredParameterInjector autowiredParameterInjector;
+	private ConjoinedParameterInjector conjoinedParameterInjector;
 
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
 		List<Data> list = new ArrayList<>();
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
-			internalReflectionHelper.getDeclaredMethodsForName(Class.forName(data.clazz().getClassName()), data.memberName()).stream()
+			Class<?> parent = Class.forName(data.clazz().getClassName());
+			internalReflectionHelper.getDeclaredMethodsForName(parent, data.memberName()).stream()
 				.filter(method -> method.isAnnotationPresent(Bean.class))
 				.forEach(method -> {
 					method.trySetAccessible();
@@ -42,10 +44,10 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 						if (method.getParameterCount() == 0) {
 							return method.invoke(null);
 						} else {
-							if (!internalReflectionHelper.allParametersHaveAnnotation(method.getParameterAnnotations(), Autowired.class)) {
-								throw new IllegalStateException("@Bean method parameters must be annotated with @Autowired");
+							if (!internalReflectionHelper.allParametersHaveAnnotation(method.getParameterAnnotations(), Autowired.class, Directory.class)) {
+								throw new IllegalStateException("@Bean method parameters must be annotated with @Autowired or @Directory");
 							}
-							return method.invoke(null, autowiredParameterInjector.inject(context, method.getParameters(), method));
+							return method.invoke(null, conjoinedParameterInjector.inject(context, scanData, parent, method.getParameters(), method));
 						}
 					}));
 				});

@@ -10,6 +10,7 @@ import org.objectweb.asm.Type;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.ListInjector;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 
@@ -35,15 +36,35 @@ public class BeanAnnotationInspectBeanProcessorTests {
 	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
 
+	@Mock
+	private ListInjector listInjector;
+
 	@InjectMocks
 	private BeanAnnotationInspectBeanProcessor instance;
 
-	private Parameter mockParam(String name) {
+	private Parameter mockAutowiredParam(String name) {
 		Parameter parameter = mock(Parameter.class);
 
 		Autowired autowired = mock(Autowired.class);
 		when(autowired.value()).thenReturn(name);
+		when(parameter.isAnnotationPresent(Autowired.class)).thenReturn(true);
+		when(parameter.isAnnotationPresent(Directory.class)).thenReturn(false);
 		when(parameter.getAnnotation(Autowired.class)).thenReturn(autowired);
+
+		doReturn(TestBean.class).when(parameter).getType();
+
+		return parameter;
+	}
+
+	private Parameter mockDirectoryParam(String name) {
+		Parameter parameter = mock(Parameter.class);
+
+		Directory directory = mock(Directory.class);
+		doReturn(TestBean.class).when(directory).value();
+		when(directory.recursive()).thenReturn(true);
+		when(parameter.isAnnotationPresent(Autowired.class)).thenReturn(false);
+		when(parameter.isAnnotationPresent(Directory.class)).thenReturn(true);
+		when(parameter.getAnnotation(Directory.class)).thenReturn(directory);
 
 		doReturn(TestBean.class).when(parameter).getType();
 
@@ -95,8 +116,8 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 		when(target.getParameterCount()).thenReturn(2);
 		Parameter[] parameters = new Parameter[]{
-			mockParam("p1"),
-			mockParam("p2")
+			mockAutowiredParam("p1"),
+			mockDirectoryParam("p2")
 		};
 		when(target.getParameters()).thenReturn(parameters);
 		doReturn(TestBean.class).when(target).getReturnType();
@@ -106,7 +127,9 @@ public class BeanAnnotationInspectBeanProcessorTests {
 		when(context.dependencies()).thenReturn(Optional.of(depMap));
 
 		when(target.getParameterAnnotations()).thenReturn(new Annotation[0][0]);
-		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class)).thenReturn(true);
+		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class, Directory.class)).thenReturn(true);
+
+		doReturn(List.of(new BeanDefinition<>(TestBean.class, "d3"))).when(listInjector).gather(scanData, TestBean.class, TestBean.class, true);
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
@@ -114,7 +137,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 		List<BeanDefinition<?>> depList = depMap.get(new BeanDefinition<>(TestBean.class, null));
 		assertEquals(2, depList.size());
 		assertEquals(new BeanDefinition<>(TestBean.class, "p1"), depList.getFirst());
-		assertEquals(new BeanDefinition<>(TestBean.class, "p2"), depList.get(1));
+		assertEquals(new BeanDefinition<>(TestBean.class, "d3"), depList.get(1));
 	}
 
 	@Test
@@ -136,8 +159,8 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 		when(target.getParameterCount()).thenReturn(2);
 		Parameter[] parameters = new Parameter[]{
-			mockParam("p1"),
-			mockParam("p2")
+			mockAutowiredParam("p1"),
+			mockDirectoryParam("p2")
 		};
 		when(target.getParameters()).thenReturn(parameters);
 		doReturn(TestBean.class).when(target).getReturnType();
@@ -147,11 +170,11 @@ public class BeanAnnotationInspectBeanProcessorTests {
 		when(context.dependencies()).thenReturn(Optional.of(depMap));
 
 		when(target.getParameterAnnotations()).thenReturn(new Annotation[0][0]);
-		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class)).thenReturn(false);
+		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class, Directory.class)).thenReturn(false);
 
 		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
 
-		assertEquals("@Bean method parameters must be annotated with @Autowired", exception.getMessage());
+		assertEquals("@Bean method parameters must be annotated with @Autowired or @Directory", exception.getMessage());
 
 		assertEquals(0, depMap.size());
 	}
