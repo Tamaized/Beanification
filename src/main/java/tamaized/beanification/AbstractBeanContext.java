@@ -3,10 +3,7 @@ package tamaized.beanification;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @ApiStatus.Internal
 abstract class AbstractBeanContext {
@@ -45,10 +42,23 @@ abstract class AbstractBeanContext {
 		BEANS.put(beanDefinition, instance);
 	}
 
-	<T> T injectInternal(Class<T> type, @Nullable String name) {
+	private void assertFrozenAccess() {
 		if (!frozen && !canAccessUnfrozen())
 			throw new IllegalStateException("Bean Context has not been initialized yet");
+	}
+
+	<T> T injectInternal(Class<T> type, @Nullable String name) {
+		assertFrozenAccess();
 		return type.cast(Objects.requireNonNull(BEANS.get(new BeanDefinition<>(type, name)), "Trying to inject Bean: " + type + (name == null ? "" : " (" + name + ")")));
+	}
+
+	<T> List<T> injectFuzzyInternal(Class<T> type) {
+		assertFrozenAccess();
+		return BEANS.entrySet().stream()
+			.filter(entry -> type.isAssignableFrom(entry.getKey().type()))
+			.map(Map.Entry::getValue)
+			.map(type::cast)
+			.toList();
 	}
 
 }

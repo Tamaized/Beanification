@@ -31,8 +31,7 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 		List<Data> list = new ArrayList<>();
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
-			Class<?> parent = Class.forName(data.clazz().getClassName());
-			internalReflectionHelper.getDeclaredMethodsForName(parent, data.memberName()).stream()
+			internalReflectionHelper.getDeclaredMethodsForName(Class.forName(data.clazz().getClassName()), data.memberName()).stream()
 				.filter(method -> method.isAnnotationPresent(Bean.class))
 				.forEach(method -> {
 					method.trySetAccessible();
@@ -47,7 +46,7 @@ public class BeanAnnotationGatherBeanProcessor implements IBeanProcessor {
 							if (!internalReflectionHelper.allParametersHaveAnnotation(method.getParameterAnnotations(), Autowired.class, Directory.class)) {
 								throw new IllegalStateException("@Bean method parameters must be annotated with @Autowired or @Directory");
 							}
-							return method.invoke(null, conjoinedParameterInjector.inject(context, scanData, parent, method.getParameters(), method));
+							return method.invoke(null, conjoinedParameterInjector.inject(context, method.getParameters(), method));
 						}
 					}));
 				});

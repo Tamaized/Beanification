@@ -14,9 +14,10 @@ public class InternalBeanContext extends AbstractBeanContext {
 	static {
 		INSTANCE.registerInternal(DistAnnotationRetriever.class, null, new DistAnnotationRetriever());
 		INSTANCE.registerInternal(InternalReflectionHelper.class, null, new InternalReflectionHelper());
+		INSTANCE.registerInternal(FieldLocator.class, null, new FieldLocator());
 		INSTANCE.registerInternal(BeanContextConfig.class, null, new BeanContextConfig());
 		INSTANCE.registerInternal(BeanConstructorLocater.class, null, new BeanConstructorLocater());
-		INSTANCE.registerInternal(ListInjector.class, null, new ListInjector());
+		INSTANCE.registerInternal(DependencyInspector.class, null, new DependencyInspector());
 		INSTANCE.registerInternal(AutowiredParameterInjector.class, null, new AutowiredParameterInjector());
 		INSTANCE.registerInternal(ConjoinedParameterInjector.class, null, new ConjoinedParameterInjector());
 

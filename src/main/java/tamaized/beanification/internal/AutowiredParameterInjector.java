@@ -17,7 +17,7 @@ public class AutowiredParameterInjector {
 			String unresolvedName = p.getAnnotation(Autowired.class).value();
 			BeanDefinition<?> depDef = new BeanDefinition<>(p.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName);
 			context.currentInjection().orElseThrow().set(objOp);
-			return context.injector().orElseThrow().apply(depDef);
+			return context.strictInjector().orElseThrow().apply(depDef);
 		}).toArray();
 	}
 

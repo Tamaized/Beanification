@@ -204,7 +204,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		when(conjoinedParameterInjector.inject(context, scanData, TestBean.class, parameters, target)).thenReturn(new Object[] {depBean, depBean});
+		when(conjoinedParameterInjector.inject(context, parameters, target)).thenReturn(new Object[] {depBean, depBean});
 
 		when(target.getParameterAnnotations()).thenReturn(new Annotation[0][0]);
 		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class, Directory.class)).thenReturn(true);
@@ -249,7 +249,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		when(conjoinedParameterInjector.inject(context, scanData, TestBean.class, parameters, target)).thenReturn(new Object[] {depBean, depBean});
+		when(conjoinedParameterInjector.inject(context, parameters, target)).thenReturn(new Object[] {depBean, depBean});
 
 		when(target.getParameterAnnotations()).thenReturn(new Annotation[0][0]);
 		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class, Directory.class)).thenReturn(false);

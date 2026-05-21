@@ -48,7 +48,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModContainer modContainer = mock(ModContainer.class);
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), new TestBean())));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), new TestBean())));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -72,7 +72,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -103,7 +103,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -137,7 +137,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -177,7 +177,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -217,7 +217,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -258,7 +258,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -299,7 +299,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -340,7 +340,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
@@ -382,7 +382,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
-		when(context.beans()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
+		when(context.beansToProcess()).thenReturn(Optional.of(Map.of(new BeanDefinition<>(TestBean.class, null), bean)));
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)).thenReturn(Stream.of(
 			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())

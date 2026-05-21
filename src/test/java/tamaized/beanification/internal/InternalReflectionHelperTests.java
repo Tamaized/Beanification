@@ -151,11 +151,6 @@ public class InternalReflectionHelperTests {
 				return TestBean.class;
 			}
 
-			@Override
-			public boolean recursive() {
-				return false;
-			}
-
 		};
 	}
 

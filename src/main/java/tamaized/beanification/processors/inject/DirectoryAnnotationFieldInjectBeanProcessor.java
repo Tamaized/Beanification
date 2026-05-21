@@ -5,7 +5,6 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
-import tamaized.beanification.internal.ListInjector;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
@@ -14,7 +13,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 @BeanProcessor(BeanLifeCycle.Inject)
-public class DirectoryAnnotationInjectBeanProcessor implements IBeanProcessor {
+public class DirectoryAnnotationFieldInjectBeanProcessor implements IBeanProcessor {
 
 	@InternalAutowired
 	private DistAnnotationRetriever distAnnotationRetriever;
@@ -22,12 +21,9 @@ public class DirectoryAnnotationInjectBeanProcessor implements IBeanProcessor {
 	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
 
-	@InternalAutowired
-	private ListInjector listInjector;
-
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
-		for (Map.Entry<BeanDefinition<?>, Object> entry : context.beans().orElseThrow().entrySet()) {
+		for (Map.Entry<BeanDefinition<?>, Object> entry : context.beansToProcess().orElseThrow().entrySet()) {
 			Object bean = entry.getValue();
 			if (bean instanceof Record)
 				continue;
@@ -41,8 +37,7 @@ public class DirectoryAnnotationInjectBeanProcessor implements IBeanProcessor {
 						throw new IllegalStateException("@Directory fields must be non-static inside Beans");
 					}
 					field.trySetAccessible();
-					Directory annotation = field.getAnnotation(Directory.class);
-					field.set(bean, listInjector.inject(context, scanData, bean.getClass(), annotation.value(), annotation.recursive()));
+					field.set(bean, context.fuzzyInjector().orElseThrow().apply(field.getAnnotation(Directory.class).value()));
 				}
 			}
 		}

@@ -5,14 +5,12 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.BeanContext;
 import tamaized.beanification.BeanDefinition;
 import tamaized.beanification.BeanLifeCycle;
-import tamaized.beanification.CircularDependencyException;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @BeanProcessor(BeanLifeCycle.Construct)
 public class ConstructBeanProcessor implements IBeanProcessor {
@@ -20,7 +18,7 @@ public class ConstructBeanProcessor implements IBeanProcessor {
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
 		var deps = new HashMap<>(context.dependencies().orElseThrow());
-		deps.replaceAll((k, v) -> new ArrayList<>(v));
+		deps.replaceAll((_, v) -> new ArrayList<>(v));
 
 		var toProcess = new HashMap<>(context.gather().orElseThrow());
 		while (!toProcess.isEmpty()) {

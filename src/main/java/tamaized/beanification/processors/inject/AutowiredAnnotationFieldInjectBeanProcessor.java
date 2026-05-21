@@ -13,7 +13,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 @BeanProcessor(BeanLifeCycle.Inject)
-public class AutowiredAnnotationInjectBeanProcessor implements IBeanProcessor {
+public class AutowiredAnnotationFieldInjectBeanProcessor implements IBeanProcessor {
 
 	@InternalAutowired
 	private DistAnnotationRetriever distAnnotationRetriever;
@@ -23,7 +23,7 @@ public class AutowiredAnnotationInjectBeanProcessor implements IBeanProcessor {
 
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
-		for (Map.Entry<BeanDefinition<?>, Object> entry : context.beans().orElseThrow().entrySet()) {
+		for (Map.Entry<BeanDefinition<?>, Object> entry : context.beansToProcess().orElseThrow().entrySet()) {
 			Object bean = entry.getValue();
 			if (bean instanceof Record)
 				continue;
@@ -40,7 +40,7 @@ public class AutowiredAnnotationInjectBeanProcessor implements IBeanProcessor {
 						throw new IllegalStateException("@Autowired fields must be non-static inside Beans");
 					}
 					field.trySetAccessible();
-					field.set(bean, context.injector().orElseThrow().apply(
+					field.set(bean, context.strictInjector().orElseThrow().apply(
 						new BeanDefinition<>(field.getType(), name.filter(s -> !s.equals(Component.DEFAULT_VALUE)).orElse(null))
 					));
 				}

@@ -8,6 +8,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.objectweb.asm.Type;
 import tamaized.beanification.*;
+import tamaized.beanification.directory.DirectoryOtherTestBean;
+import tamaized.beanification.directory.DirectoryTestBean;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
@@ -15,10 +17,7 @@ import tamaized.beanification.junit.MockitoRunner;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -26,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoFixer.class, MockitoRunner.class})
-public class AutowiredAnnotationInjectBeanProcessorTest {
+public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 
 	@Mock
 	private DistAnnotationRetriever distAnnotationRetriever;
@@ -35,18 +34,14 @@ public class AutowiredAnnotationInjectBeanProcessorTest {
 	private InternalReflectionHelper internalReflectionHelper;
 
 	@InjectMocks
-	private AutowiredAnnotationInjectBeanProcessor instance;
+	private DirectoryAnnotationFieldInjectBeanProcessor instance;
 
 	private Field mockField() {
-		return mockField(Component.DEFAULT_VALUE);
-	}
-
-	private Field mockField(String value) {
 		Field f = mock(Field.class);
-		when(f.isAnnotationPresent(Autowired.class)).thenReturn(true);
-		Autowired annotation = mock(Autowired.class);
-		when(annotation.value()).thenReturn(value);
-		when(f.getAnnotation(Autowired.class)).thenReturn(annotation);
+		when(f.isAnnotationPresent(Directory.class)).thenReturn(true);
+		Directory annotation = mock(Directory.class);
+		doReturn(TestBean.class).when(annotation).value();
+		when(f.getAnnotation(Directory.class)).thenReturn(annotation);
 		return f;
 	}
 
@@ -57,9 +52,9 @@ public class AutowiredAnnotationInjectBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		Map<BeanDefinition<?>, Object> beanMap = new HashMap<>();
-		when(context.beans()).thenReturn(Optional.of(beanMap));
+		when(context.beansToProcess()).thenReturn(Optional.of(beanMap));
 
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.empty());
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenReturn(Stream.empty());
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 	}
@@ -71,13 +66,17 @@ public class AutowiredAnnotationInjectBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
+		DirectoryTestBean recursiveBean = new DirectoryTestBean();
+		DirectoryOtherTestBean recursiveOtherBean = new DirectoryOtherTestBean();
 		Map<BeanDefinition<?>, Object> beanMap = new HashMap<>();
 		beanMap.put(new BeanDefinition<>(TestBean.class, null), bean);
-		when(context.beans()).thenReturn(Optional.of(beanMap));
+		beanMap.put(new BeanDefinition<>(DirectoryTestBean.class, null), recursiveBean);
+		beanMap.put(new BeanDefinition<>(DirectoryOtherTestBean.class, null), recursiveOtherBean);
+		when(context.beansToProcess()).thenReturn(Optional.of(beanMap));
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(invocation -> Stream.of(data));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenAnswer(invocation -> Stream.of(data));
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), TestBean.class)).thenReturn(true);
 
@@ -85,21 +84,22 @@ public class AutowiredAnnotationInjectBeanProcessorTest {
 		when(data.memberName()).thenReturn("memberName");
 
 		Field field = mockField();
-		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(TestBean.class, "memberName", Component.DEFAULT_VALUE)).thenReturn(
+		when(internalReflectionHelper.getAllDirectoryFieldsIncludingSuper(TestBean.class, "memberName")).thenReturn(
 			List.of(field)
 		);
 		when(internalReflectionHelper.getDeclaredField(TestBean.class, "memberName")).thenReturn(field);
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(false);
 
-		TestBean dep = new TestBean();
-		when(context.injector()).thenReturn(Optional.of(def -> dep));
-
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
+
+		List<?> deps = List.of(new TestBean());
+
+		when(context.fuzzyInjector()).thenReturn(Optional.of(_ -> deps));
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
-		verify(field).set(bean, dep);
+		verify(field).set(bean, deps);
 	}
 
 	@Test
@@ -114,7 +114,7 @@ public class AutowiredAnnotationInjectBeanProcessorTest {
 		TestBeanRecord bean = new TestBeanRecord();
 		Map<BeanDefinition<?>, Object> beanMap = new HashMap<>();
 		beanMap.put(new BeanDefinition<>(TestBeanRecord.class, null), bean);
-		when(context.beans()).thenReturn(Optional.of(beanMap));
+		when(context.beansToProcess()).thenReturn(Optional.of(beanMap));
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 	}
@@ -126,13 +126,15 @@ public class AutowiredAnnotationInjectBeanProcessorTest {
 		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		TestBean bean = new TestBean();
+		TestBean dep = new TestBean();
 		Map<BeanDefinition<?>, Object> beanMap = new HashMap<>();
-		beanMap.put(new BeanDefinition<>(TestBean.class, null), bean);
-		when(context.beans()).thenReturn(Optional.of(beanMap));
+		beanMap.put(new BeanDefinition<>(TestBean.class, "source"), bean);
+		beanMap.put(new BeanDefinition<>(TestBean.class, null), dep);
+		when(context.beansToProcess()).thenReturn(Optional.of(beanMap));
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(invocation -> Stream.of(data));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenAnswer(invocation -> Stream.of(data));
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), TestBean.class)).thenReturn(true);
 
@@ -140,21 +142,24 @@ public class AutowiredAnnotationInjectBeanProcessorTest {
 		when(data.memberName()).thenReturn("memberName");
 
 		Field field = mockField();
-		when(internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(TestBean.class, "memberName", Component.DEFAULT_VALUE)).thenReturn(
+		when(internalReflectionHelper.getAllDirectoryFieldsIncludingSuper(TestBean.class, "memberName")).thenReturn(
 			List.of(field)
 		);
 		when(internalReflectionHelper.getDeclaredField(TestBean.class, "memberName")).thenReturn(field);
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(true);
 
-		TestBean dep = new TestBean();
-		when(context.injector()).thenReturn(Optional.of(def -> dep));
+		when(context.strictInjector()).thenReturn(Optional.of(def -> dep));
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
+		ModFileScanData.ClassData classData = mock(ModFileScanData.ClassData.class);
+		doReturn(Type.getType(TestBean.class)).when(classData).clazz();
+		when(scanData.getClasses()).thenReturn(Set.of(classData));
+
 		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
 
-		assertEquals("@Autowired fields must be non-static inside Beans", result.getMessage());
+		assertEquals("@Directory fields must be non-static inside Beans", result.getMessage());
 
 		verify(field, never()).set(bean, dep);
 	}

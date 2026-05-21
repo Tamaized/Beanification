@@ -3,15 +3,13 @@ package tamaized.beanification.processors.inspect;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
+import tamaized.beanification.internal.DependencyInspector;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
-import tamaized.beanification.internal.ListInjector;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
 import java.lang.annotation.ElementType;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.util.*;
 
 @BeanProcessor(value = BeanLifeCycle.Inspect, priority = 1)
@@ -24,7 +22,7 @@ public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 	private InternalReflectionHelper internalReflectionHelper;
 
 	@InternalAutowired
-	private ListInjector listInjector;
+	private DependencyInspector dependencyInspector;
 
 	@Override
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
@@ -45,17 +43,11 @@ public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 						if (!internalReflectionHelper.allParametersHaveAnnotation(method.getParameterAnnotations(), Autowired.class, Directory.class)) {
 							throw new IllegalStateException("@Bean method parameters must be annotated with @Autowired or @Directory");
 						}
-						List<BeanDefinition<?>> deps = new ArrayList<>();
-						for (Parameter parameter : method.getParameters()) {
-							if (parameter.isAnnotationPresent(Autowired.class)) {
-								String unresolvedName = parameter.getAnnotation(Autowired.class).value();
-								deps.add(new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName));
-							} else if (parameter.isAnnotationPresent(Directory.class)) {
-								Directory directoryAnnotation = parameter.getAnnotation(Directory.class);
-								deps.addAll(listInjector.gather(scanData, parent, directoryAnnotation.value(), directoryAnnotation.recursive()));
-							}
-						}
-						list.add(new Data(annotation.priority(), new BeanDefinition<>(method.getReturnType(), name), deps));
+						list.add(new Data(
+							annotation.priority(),
+							new BeanDefinition<>(method.getReturnType(), name),
+							dependencyInspector.inspect(context, method.getParameters())
+						));
 					}
 				});
 		}

@@ -5,13 +5,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import tamaized.beanification.Autowired;
 import tamaized.beanification.BeanContext;
-import tamaized.beanification.BeanDefinition;
 import tamaized.beanification.TestBean;
 import tamaized.beanification.junit.MockitoRunner;
 
 import java.lang.reflect.Parameter;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,11 +44,9 @@ public class AutowiredParameterInjectorTests {
 		};
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
-		when(context.gather()).thenReturn(Optional.of(gatherMap));
 		AtomicReference<Object> refMock = mock(AtomicReference.class);
 		when(context.currentInjection()).thenReturn(Optional.of(refMock));
-		when(context.injector()).thenReturn(Optional.of(_ -> depBean));
+		when(context.strictInjector()).thenReturn(Optional.of(_ -> depBean));
 
 		TestBean refObj = new TestBean();
 
@@ -64,7 +59,7 @@ public class AutowiredParameterInjectorTests {
 
 		verify(context, times(2)).currentInjection();
 		verify(refMock, times(2)).set(refObj);
-		verify(context, times(2)).injector();
+		verify(context, times(2)).strictInjector();
 	}
 
 }

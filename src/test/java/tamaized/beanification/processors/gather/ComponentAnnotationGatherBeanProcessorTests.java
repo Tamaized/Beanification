@@ -12,14 +12,12 @@ import tamaized.beanification.internal.*;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 
-import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,9 +28,6 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 
 	@Mock
 	private DistAnnotationRetriever distAnnotationRetriever;
-
-	@Mock
-	private InternalReflectionHelper internalReflectionHelper;
 
 	@Mock
 	private BeanConstructorLocater beanConstructorLocater;
@@ -48,69 +43,31 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 	public void processNoArgs() throws Throwable {
 		ModContainer modContainer = mock(ModContainer.class);
 		ModFileScanData scanData = mock(ModFileScanData.class);
+		ModFileScanData.AnnotationData data = new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>());
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>())
+			data
 		));
 
-		Component bean = mock(Component.class);
-		when(bean.value()).thenReturn(Component.DEFAULT_VALUE);
-		when(internalReflectionHelper.getAnnotation(TestBean.class, Component.class)).thenReturn(bean);
-
-		TestBean resultBean = new TestBean();
-		Constructor<TestBean> constructor = mock(Constructor.class);
-		when(constructor.getParameterCount()).thenReturn(0);
-		when(constructor.newInstance()).thenReturn(resultBean);
-		doReturn(constructor).when(beanConstructorLocater).locate(TestBean.class);
+		BeanConstructorLocater.BeanConstructor beanConstructor = mock(BeanConstructorLocater.BeanConstructor.class);
+		when(beanConstructorLocater.locate(data)).thenReturn(beanConstructor);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		doReturn(new BeanDefinition<>(TestBean.class, null)).when(beanConstructor).definition();
 
-		assertEquals(1, gatherMap.size());
-		assertSame(resultBean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
-	}
+		Constructor<TestBean> ctor = mock(Constructor.class);
+		doReturn(ctor).when(beanConstructor).ctor();
+		when(ctor.getParameterCount()).thenReturn(0);
 
-	@Test
-	@SuppressWarnings("unchecked")
-	public void processNoArgsNamed() throws Throwable {
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>())
-		));
-
-		Component bean = mock(Component.class);
-		when(bean.value()).thenReturn("test");
-		when(internalReflectionHelper.getAnnotation(TestBean.class, Component.class)).thenReturn(bean);
-
-		TestBean resultBean = new TestBean();
-		Constructor<TestBean> constructor = mock(Constructor.class);
-		when(constructor.getParameterCount()).thenReturn(0);
-		when(constructor.newInstance()).thenReturn(resultBean);
-		doReturn(constructor).when(beanConstructorLocater).locate(TestBean.class);
-
-		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
-		when(context.gather()).thenReturn(Optional.of(gatherMap));
+		TestBean bean = new TestBean();
+		when(ctor.newInstance()).thenReturn(bean);
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
 		assertEquals(1, gatherMap.size());
-		assertSame(resultBean, gatherMap.get(new BeanDefinition<>(TestBean.class, "test")).get());
-	}
-
-	private Parameter mockParam(String name) {
-		Parameter parameter = mock(Parameter.class);
-
-		Autowired autowired = mock(Autowired.class);
-		when(autowired.value()).thenReturn(name);
-		when(parameter.getAnnotation(Autowired.class)).thenReturn(autowired);
-
-		doReturn(TestBean.class).when(parameter).getType();
-
-		return parameter;
+		assertSame(bean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
 	}
 
 	@Test
@@ -118,36 +75,37 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 	public void processWithArgs() throws Throwable {
 		ModContainer modContainer = mock(ModContainer.class);
 		ModFileScanData scanData = mock(ModFileScanData.class);
+		ModFileScanData.AnnotationData data = new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>());
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>())
+			data
 		));
 
-		Component bean = mock(Component.class);
-		when(bean.value()).thenReturn(Component.DEFAULT_VALUE);
-		when(internalReflectionHelper.getAnnotation(TestBean.class, Component.class)).thenReturn(bean);
-
-		TestBean depBean = new TestBean();
-		TestBean resultBean = new TestBean();
-		Constructor<TestBean> constructor = mock(Constructor.class);
-		when(constructor.getParameterCount()).thenReturn(2);
-		Parameter[] parameters = new Parameter[]{
-			mockParam("p1"),
-			mockParam("p2")
-		};
-		when(constructor.getParameters()).thenReturn(parameters);
-		when(constructor.newInstance(depBean, depBean)).thenReturn(resultBean);
-		doReturn(constructor).when(beanConstructorLocater).locate(TestBean.class);
+		BeanConstructorLocater.BeanConstructor beanConstructor = mock(BeanConstructorLocater.BeanConstructor.class);
+		when(beanConstructorLocater.locate(data)).thenReturn(beanConstructor);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		when(conjoinedParameterInjector.inject(context, scanData, TestBean.class, parameters, constructor)).thenReturn(new Object[] {depBean, depBean});
+		doReturn(new BeanDefinition<>(TestBean.class, null)).when(beanConstructor).definition();
+
+		Constructor<TestBean> ctor = mock(Constructor.class);
+		doReturn(ctor).when(beanConstructor).ctor();
+		when(ctor.getParameterCount()).thenReturn(1);
+
+		Parameter[] params = new Parameter[0];
+		when(ctor.getParameters()).thenReturn(params);
+
+		TestBean depBean = new TestBean();
+		when(conjoinedParameterInjector.inject(context, params, ctor)).thenReturn(new Object[] {depBean});
+
+		TestBean bean = new TestBean();
+		when(ctor.newInstance(depBean)).thenReturn(bean);
 
 		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
 
 		assertEquals(1, gatherMap.size());
-		assertSame(resultBean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
+		assertSame(bean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
 	}
 
 }

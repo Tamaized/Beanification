@@ -109,6 +109,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.of(currentInjection),
 				Optional.of(definition -> injectInternal(definition.type(), definition.name())),
+				Optional.of(this::injectFuzzyInternal),
 				Optional.empty()
 			);
 			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
@@ -117,6 +118,7 @@ public final class BeanContext extends AbstractBeanContext {
 			lifeCycleContext = new BeanLifeCycleContext(
 				Optional.of(Collections.unmodifiableMap(lifeCycleContext.gather.orElseThrow())),
 				Optional.of(new HashMap<>()),
+				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
@@ -132,6 +134,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
+				Optional.empty(),
 				Optional.empty()
 			);
 			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
@@ -141,6 +144,7 @@ public final class BeanContext extends AbstractBeanContext {
 				lifeCycleContext.gather,
 				lifeCycleContext.dependencies,
 				Optional.of((definition, bean) -> registerInternal(definition.type(), definition.name(), bean)),
+				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
 				Optional.empty()
@@ -156,6 +160,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.of(currentInjection),
 				Optional.of(definition -> injectChecked(definition.type(), definition.name()).orElse(null)),
+				Optional.of(this::injectFuzzyInternal),
 				Optional.of(getBeans())
 			);
 			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
@@ -168,6 +173,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.of(currentInjection),
 				Optional.of(definition -> injectChecked(definition.type(), definition.name()).orElse(null)),
+				Optional.of(this::injectFuzzyInternal),
 				Optional.of(getBeans())
 			);
 			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
@@ -179,6 +185,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty(),
 				Optional.of(currentInjection),
+				Optional.empty(),
 				Optional.empty(),
 				Optional.of(getBeans())
 			);
@@ -237,6 +244,7 @@ public final class BeanContext extends AbstractBeanContext {
 					Optional.empty(),
 					Optional.of(curInj),
 					Optional.of(definition -> INSTANCE.injectChecked(definition.type(), definition.name()).orElse(null)),
+					Optional.of(INSTANCE::injectFuzzyInternal),
 					Optional.of(Map.of(new BeanDefinition<>(object.getClass(), null), object))
 				),
 				context.container(),
@@ -291,8 +299,9 @@ public final class BeanContext extends AbstractBeanContext {
 		Optional<Map<BeanDefinition<?>, List<BeanDefinition<?>>>> dependencies,
 		Optional<BiConsumer<BeanDefinition<?>, Object>> register,
 		Optional<AtomicReference<Object>> currentInjection,
-		Optional<Function<BeanDefinition<?>, Object>> injector,
-		Optional<Map<BeanDefinition<?>, Object>> beans
+		Optional<Function<BeanDefinition<?>, Object>> strictInjector,
+		Optional<Function<Class<?>, List<?>>> fuzzyInjector,
+		Optional<Map<BeanDefinition<?>, Object>> beansToProcess
 	) {
 
 	}

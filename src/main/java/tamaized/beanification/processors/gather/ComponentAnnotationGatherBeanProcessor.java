@@ -8,19 +8,13 @@ import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
 import java.lang.annotation.ElementType;
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Objects;
 
 @BeanProcessor(BeanLifeCycle.Gather)
 public class ComponentAnnotationGatherBeanProcessor implements IBeanProcessor {
 
 	@InternalAutowired
 	private DistAnnotationRetriever distAnnotationRetriever;
-
-	@InternalAutowired
-	private InternalReflectionHelper internalReflectionHelper;
 
 	@InternalAutowired
 	private BeanConstructorLocater beanConstructorLocater;
@@ -32,16 +26,12 @@ public class ComponentAnnotationGatherBeanProcessor implements IBeanProcessor {
 	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
-			Class<?> c = Class.forName(data.clazz().getClassName());
-			Component annotation = internalReflectionHelper.getAnnotation(c, Component.class);
-			String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
+			BeanConstructorLocater.BeanConstructor beanConstructor = beanConstructorLocater.locate(data);
 
-			Constructor<?> ctor = beanConstructorLocater.locate(c);
-
-			context.gather().orElseThrow().put(new BeanDefinition<>(c, name), () -> {
-				if (ctor.getParameterCount() == 0)
-					return ctor.newInstance();
-				return ctor.newInstance(conjoinedParameterInjector.inject(context, scanData, c, ctor.getParameters(), ctor));
+			context.gather().orElseThrow().put(beanConstructor.definition(), () -> {
+				if (beanConstructor.ctor().getParameterCount() == 0)
+					return beanConstructor.ctor().newInstance();
+				return beanConstructor.ctor().newInstance(conjoinedParameterInjector.inject(context, beanConstructor.ctor().getParameters(), beanConstructor.ctor()));
 			});
 		}
 	}
