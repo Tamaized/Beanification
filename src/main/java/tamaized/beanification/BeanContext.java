@@ -6,6 +6,7 @@ import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tamaized.beanification.internal.AdditionalModuleNamesProvider;
 import tamaized.beanification.internal.BeanContextConfig;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.processors.IBeanProcessor;
@@ -30,6 +31,9 @@ public final class BeanContext extends AbstractBeanContext {
 
 	@InternalAutowired
 	private BeanContextConfig config;
+
+	@InternalAutowired
+	private AdditionalModuleNamesProvider additionalModuleNamesProvider;
 
 	@InternalAutowired
 	private DistAnnotationRetriever distAnnotationRetriever;
@@ -79,6 +83,8 @@ public final class BeanContext extends AbstractBeanContext {
 
 		ModFileScanData scanData = modContainer.getModInfo().getOwningFile().getFile().getScanResult();
 		AtomicReference<Object> currentInjection = new AtomicReference<>();
+
+		additionalModuleNamesProvider.setup(config.scanSettings().getAdditionalComponentScanModuleNames());
 
 		try {
 			LOGGER.debug("Registering Bean annotation processors");

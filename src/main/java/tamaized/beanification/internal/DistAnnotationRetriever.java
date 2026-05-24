@@ -11,41 +11,42 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import tamaized.beanification.InternalAutowired;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @ApiStatus.Internal
 public class DistAnnotationRetriever {
 
-	@Nullable
-	private Supplier<ModFileScanData> cachedBeanificationScan;
+	@InternalAutowired
+	private AdditionalModuleNamesProvider additionalModuleNamesProvider;
+
+	private final Map<String, Supplier<ModFileScanData>> cachedModuleScan = new HashMap<>();
 
 	@SuppressWarnings("UnstableApiUsage")
-	public final Optional<ModFileScanData> getBeanificationScanData() {
-		if (cachedBeanificationScan != null) {
-			return Optional.ofNullable(cachedBeanificationScan.get());
+	public final Optional<ModFileScanData> getModuleScanData(String moduleName) {
+		if (cachedModuleScan.containsKey(moduleName)) {
+			return Optional.ofNullable(cachedModuleScan.get(moduleName).get());
 		}
 
-		FMLLoader.getCurrent().getGameLayer().configuration().modules().stream().filter(r -> r.name().equals("beanification")).findAny().ifPresentOrElse(module -> {
+		FMLLoader.getCurrent().getGameLayer().configuration().modules().stream().filter(r -> r.name().equals(moduleName)).findAny().ifPresentOrElse(module -> {
 			try {
 				JarContents jar = JarContents.ofPath(Path.of(module.reference().location().orElseThrow()));
 				ModFile modFile = new ModFile(jar, _ -> null, new ModFileDiscoveryAttributes(null, null, null, null));
 				ModFileScanData result = new Scanner(modFile).scan();
-				cachedBeanificationScan = () -> result;
+				cachedModuleScan.put(moduleName, () -> result);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-		}, () -> cachedBeanificationScan = () -> null);
+		}, () -> cachedModuleScan.put(moduleName, () -> null));
 
-		return Optional.ofNullable(cachedBeanificationScan.get());
+		return Optional.ofNullable(cachedModuleScan.get(moduleName).get());
 	}
 
 	@SafeVarargs
@@ -56,8 +57,16 @@ public class DistAnnotationRetriever {
 			t.add(type);
 		}
 		return t.stream().flatMap(type -> {
-			Stream<ModFileScanData.AnnotationData> modScan = scanData.getAnnotatedBy(type, elementType);
-			Stream<ModFileScanData.AnnotationData> combinedScan = getBeanificationScanData().map(s -> Stream.concat(s.getAnnotatedBy(type, elementType), modScan)).orElse(modScan);
+			Stream<ModFileScanData.AnnotationData> combinedScan = Stream.concat(
+				scanData.getAnnotatedBy(type, elementType),
+				Stream.concat(
+					Stream.of("beanification"),
+					additionalModuleNamesProvider.getNames().stream()
+				).flatMap(moduleName -> getModuleScanData(moduleName)
+					.map(s -> s.getAnnotatedBy(type, elementType))
+					.orElseGet(Stream::empty)
+				)
+			);
 			return combinedScan.filter(annotation -> {
 			if (annotation.annotationData().get("dist") instanceof ArrayList<?> list) {
 				if (list.isEmpty())

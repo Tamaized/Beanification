@@ -7,6 +7,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import tamaized.beanification.Autowired;
 import tamaized.beanification.junit.MockitoRunner;
 
@@ -20,6 +21,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoRunner.class})
 public class DistAnnotationRetrieverTests {
+
+	@Mock
+	private AdditionalModuleNamesProvider additionalModuleNamesProvider;
 
 	@InjectMocks
 	private DistAnnotationRetriever instance;
@@ -42,6 +46,8 @@ public class DistAnnotationRetrieverTests {
 			new ModFileScanData.AnnotationData(null, null, null, "f", Map.of("dist", new Object())),
 			new ModFileScanData.AnnotationData(null, null, null, "g", Map.of())
 		));
+
+		when(additionalModuleNamesProvider.getNames()).thenReturn(Collections.emptyList());
 
 		List<ModFileScanData.AnnotationData> result = instance.retrieve(scanData, ElementType.FIELD, Autowired.class).toList();
 

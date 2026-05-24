@@ -1,5 +1,8 @@
 package tamaized.beanification.internal;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BeanContextConfig {
 
 	private final LoggingSettings loggingSettings = new LoggingSettings();
@@ -22,6 +25,30 @@ public class BeanContextConfig {
 
 		public boolean isInjectIntoEnabled() {
 			return injectInto;
+		}
+
+	}
+
+	private final ScanSettings scanSettings = new ScanSettings();
+
+	public ScanSettings scanSettings() {
+		return scanSettings;
+	}
+
+	public class ScanSettings {
+
+		private final List<String> additionalScanModuleNames = new ArrayList<>();
+
+		/**
+		 * Used to add shaded dependencies to the scan path during development environments
+		 */
+		public BeanContextConfig addAdditionalComponentScanModuleName(String moduleName) {
+			additionalScanModuleNames.add(moduleName);
+			return BeanContextConfig.this;
+		}
+
+		public List<String> getAdditionalComponentScanModuleNames() {
+			return additionalScanModuleNames;
 		}
 
 	}
