@@ -15,7 +15,7 @@ public class ConjoinedParameterInjector {
 	public final Object[] inject(BeanContext.BeanLifeCycleContext context, Parameter[] parameters, Object objOp) {
 		return Arrays.stream(parameters).map(p -> {
 			if (p.isAnnotationPresent(Autowired.class)) {
-				return autowiredParameterInjector.inject(context, new Parameter[] { p }, objOp);
+				return autowiredParameterInjector.injectSingle(context, p, objOp);
 			}
 
 			if (p.isAnnotationPresent(Directory.class)) {

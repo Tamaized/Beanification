@@ -55,10 +55,9 @@ public class ConjoinedParameterInjectorTests {
 
 		Object[] result = assertDoesNotThrow(() -> instance.inject(context, params, objRef));
 
-		ArgumentCaptor<Parameter[]> captor = ArgumentCaptor.forClass(Parameter[].class);
-		verify(autowiredParameterInjector).inject(eq(context), captor.capture(), eq(objRef));
-		assertEquals(1, captor.getValue().length);
-		assertEquals(autowiredParam, captor.getValue()[0]);
+		ArgumentCaptor<Parameter> captor = ArgumentCaptor.forClass(Parameter.class);
+		verify(autowiredParameterInjector).injectSingle(eq(context), captor.capture(), eq(objRef));
+		assertEquals(autowiredParam, captor.getValue());
 
 		assertSame(objRef, ref.get());
 		assertNotNull(result);

@@ -12,13 +12,15 @@ import java.util.Arrays;
 @ApiStatus.Internal
 public class AutowiredParameterInjector {
 
+	public final Object injectSingle(BeanContext.BeanLifeCycleContext context, Parameter parameter, Object objOp) {
+		String unresolvedName = parameter.getAnnotation(Autowired.class).value();
+		BeanDefinition<?> depDef = new BeanDefinition<>(parameter.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName);
+		context.currentInjection().orElseThrow().set(objOp);
+		return context.strictInjector().orElseThrow().apply(depDef);
+	}
+
 	public final Object[] inject(BeanContext.BeanLifeCycleContext context, Parameter[] parameters, Object objOp) {
-		return Arrays.stream(parameters).map(p -> {
-			String unresolvedName = p.getAnnotation(Autowired.class).value();
-			BeanDefinition<?> depDef = new BeanDefinition<>(p.getType(), unresolvedName.equals(Component.DEFAULT_VALUE) ? null : unresolvedName);
-			context.currentInjection().orElseThrow().set(objOp);
-			return context.strictInjector().orElseThrow().apply(depDef);
-		}).toArray();
+		return Arrays.stream(parameters).map(p -> injectSingle(context, p, objOp)).toArray();
 	}
 
 }
