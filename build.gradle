@@ -190,10 +190,6 @@ jar {
 	}
 }
 
-publishToMavenLocal {
-	version = "${version}-SNAPSHOT"
-}
-
 def mavenUser = hasProperty("CIMUser") ? CIMUser : secrets.getProperty("maven_username")
 def mavenToken = hasProperty("CIMToken") ? CIMToken : secrets.getProperty("maven_password")
 
