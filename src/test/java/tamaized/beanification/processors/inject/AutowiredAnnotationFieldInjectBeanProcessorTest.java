@@ -12,6 +12,7 @@ import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
@@ -61,7 +62,7 @@ public class AutowiredAnnotationFieldInjectBeanProcessorTest {
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenReturn(Stream.empty());
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 	}
 
 	@Test
@@ -97,7 +98,7 @@ public class AutowiredAnnotationFieldInjectBeanProcessorTest {
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(field).set(bean, dep);
 	}
@@ -116,7 +117,7 @@ public class AutowiredAnnotationFieldInjectBeanProcessorTest {
 		beanMap.put(new BeanDefinition<>(TestBeanRecord.class, null), bean);
 		when(context.beansToProcess()).thenReturn(Optional.of(beanMap));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 	}
 
 	@Test
@@ -152,7 +153,7 @@ public class AutowiredAnnotationFieldInjectBeanProcessorTest {
 
 		when(context.currentInjection()).thenReturn(Optional.of(new AtomicReference<>()));
 
-		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@Autowired fields must be non-static inside Beans", result.getMessage());
 

@@ -11,6 +11,7 @@ import tamaized.beanification.*;
 import tamaized.beanification.internal.*;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Constructor;
@@ -64,7 +65,7 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 		TestBean bean = new TestBean();
 		when(ctor.newInstance()).thenReturn(bean);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(bean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
@@ -102,7 +103,7 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 		TestBean bean = new TestBean();
 		when(ctor.newInstance(depBean)).thenReturn(bean);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(bean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());

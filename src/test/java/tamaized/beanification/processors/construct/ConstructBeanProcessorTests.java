@@ -9,6 +9,7 @@ import org.mockito.InjectMocks;
 import tamaized.beanification.*;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +45,7 @@ public class ConstructBeanProcessorTests {
 		BiConsumer<BeanDefinition<?>, Object> consumer = mock(BiConsumer.class);
 		when(context.register()).thenReturn(Optional.of(consumer));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(consumer).accept(new BeanDefinition<>(TestBean.class, "A"), beanA);
 		verify(consumer).accept(new BeanDefinition<>(TestBean.class, "B"), beanB);
@@ -71,7 +72,7 @@ public class ConstructBeanProcessorTests {
 		BiConsumer<BeanDefinition<?>, Object> consumer = mock(BiConsumer.class);
 		when(context.register()).thenReturn(Optional.of(consumer));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		InOrder verifyInOrder = inOrder(consumer);
 		verifyInOrder.verify(consumer).accept(new BeanDefinition<>(TestBean.class, "B"), beanB);

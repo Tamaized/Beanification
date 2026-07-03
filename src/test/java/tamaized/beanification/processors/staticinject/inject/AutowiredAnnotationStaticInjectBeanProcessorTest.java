@@ -12,6 +12,7 @@ import tamaized.beanification.internal.FieldLocator;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.staticinject.AutowiredAnnotationStaticFieldInjectBeanProcessor;
 
 import java.lang.annotation.ElementType;
@@ -62,7 +63,7 @@ public class AutowiredAnnotationStaticInjectBeanProcessorTest {
 		TestBean dep = new TestBean();
 		when(context.strictInjector()).thenReturn(Optional.of(_ -> dep));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(field).trySetAccessible();
 		verify(field).set(null, dep);
@@ -82,7 +83,7 @@ public class AutowiredAnnotationStaticInjectBeanProcessorTest {
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(false);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(context, never()).strictInjector();
 		verify(field, never()).trySetAccessible();

@@ -7,6 +7,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
@@ -24,7 +25,12 @@ public class PostConstructAnnotationFinalizeBeanProcessor implements IBeanProces
 	private InternalReflectionHelper internalReflectionHelper;
 
 	@Override
-	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
+	public void process(
+		BeanContext.BeanLifeCycleContext context,
+		ModContainer modContainer,
+		ModFileScanData scanData,
+		BeanAnnotationProcessorMetadata metadata
+	) throws Throwable {
 		for (Map.Entry<BeanDefinition<?>, Object> entry : context.beansToProcess().orElseThrow().entrySet()) {
 			Object bean = entry.getValue();
 			for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, PostConstruct.class)

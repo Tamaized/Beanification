@@ -5,6 +5,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.BeanContext;
 import tamaized.beanification.BeanDefinition;
 import tamaized.beanification.BeanLifeCycle;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
@@ -16,7 +17,12 @@ import java.util.List;
 public class ConstructBeanProcessor implements IBeanProcessor {
 
 	@Override
-	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
+	public void process(
+		BeanContext.BeanLifeCycleContext context,
+		ModContainer modContainer,
+		ModFileScanData scanData,
+		BeanAnnotationProcessorMetadata metadata
+	) throws Throwable {
 		var deps = new HashMap<>(context.dependencies().orElseThrow());
 		deps.replaceAll((_, v) -> new ArrayList<>(v));
 

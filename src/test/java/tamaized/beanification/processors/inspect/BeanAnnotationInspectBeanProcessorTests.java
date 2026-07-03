@@ -13,6 +13,7 @@ import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
@@ -62,7 +63,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(target).trySetAccessible();
 
@@ -109,7 +110,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 		LinkedHashMap<BeanDefinition<?>, List<BeanDefinition<?>>> map = new LinkedHashMap<>();
 		when(context.dependencies()).thenReturn(Optional.of(map));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(target, times(2)).trySetAccessible();
 
@@ -141,7 +142,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@Bean methods must be static", exception.getMessage());
 	}
@@ -174,7 +175,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@Bean method parameters must be annotated with @Autowired or @Directory", exception.getMessage());
 	}
@@ -219,7 +220,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 		LinkedHashMap<BeanDefinition<?>, List<BeanDefinition<?>>> map = new LinkedHashMap<>();
 		when(context.dependencies()).thenReturn(Optional.of(map));
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("Duplicate bean detected - {Type: Ltamaized/beanification/TestBean;, Name: A}", exception.getMessage());
 	}

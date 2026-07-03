@@ -50,8 +50,13 @@ public class DistAnnotationRetriever {
 	}
 
 	@SafeVarargs
-	@SuppressWarnings({"UseBulkOperation", "ManualArrayToCollectionCopy", "UnstableApiUsage"})
 	public final Stream<ModFileScanData.AnnotationData> retrieve(ModFileScanData scanData, ElementType elementType, Class<? extends Annotation>... types) {
+		return retrieve(false, scanData, elementType, types);
+	}
+
+	@SafeVarargs
+	@SuppressWarnings({"UseBulkOperation", "ManualArrayToCollectionCopy", "UnstableApiUsage"})
+	public final Stream<ModFileScanData.AnnotationData> retrieve(boolean skipBeanificationConcat, ModFileScanData scanData, ElementType elementType, Class<? extends Annotation>... types) {
 		List<Class<? extends Annotation>> t = new ArrayList<>();
 		for (Class<? extends Annotation> type : types) {
 			t.add(type);
@@ -60,7 +65,7 @@ public class DistAnnotationRetriever {
 			Stream<ModFileScanData.AnnotationData> combinedScan = Stream.concat(
 				scanData.getAnnotatedBy(type, elementType),
 				Stream.concat(
-					Stream.of("beanification"),
+					skipBeanificationConcat ? Stream.empty() : Stream.of("beanification"),
 					additionalModuleNamesProvider.getNames().stream()
 				).flatMap(moduleName -> getModuleScanData(moduleName)
 					.map(s -> s.getAnnotatedBy(type, elementType))

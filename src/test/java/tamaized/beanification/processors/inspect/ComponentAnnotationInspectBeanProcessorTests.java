@@ -14,6 +14,7 @@ import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Constructor;
@@ -64,7 +65,7 @@ public class ComponentAnnotationInspectBeanProcessorTests {
 
 		when(ctor.getParameterCount()).thenReturn(0);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(context, never()).dependencies();
 	}
@@ -97,7 +98,7 @@ public class ComponentAnnotationInspectBeanProcessorTests {
 			new BeanDefinition<>(TestBean.class, "B")
 		));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, deps.size());
 		assertEquals(new BeanDefinition<>(TestBean.class, "A"), deps.keySet().toArray()[0]);

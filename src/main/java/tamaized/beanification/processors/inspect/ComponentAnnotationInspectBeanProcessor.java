@@ -7,6 +7,7 @@ import tamaized.beanification.internal.BeanConstructorLocater;
 import tamaized.beanification.internal.DependencyInspector;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
 
@@ -30,7 +31,12 @@ public class ComponentAnnotationInspectBeanProcessor implements IBeanProcessor {
 	private DependencyInspector dependencyInspector;
 
 	@Override
-	public void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable {
+	public void process(
+		BeanContext.BeanLifeCycleContext context,
+		ModContainer modContainer,
+		ModFileScanData scanData,
+		BeanAnnotationProcessorMetadata metadata
+	) throws Throwable {
 		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class).iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
 			Class<?> c = Class.forName(data.clazz().getClassName());

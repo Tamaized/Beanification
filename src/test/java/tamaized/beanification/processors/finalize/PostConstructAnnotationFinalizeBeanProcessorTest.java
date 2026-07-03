@@ -17,6 +17,7 @@ import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.InvocationTargetException;
@@ -59,7 +60,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class)).thenThrow(new NoSuchMethodException());
 		when(internalReflectionHelper.getDeclaredMethod(TestBean.class, "method", IEventBus.class, IEventBus.class)).thenThrow(new NoSuchMethodException());
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(context, never()).currentInjection();
 		verify(internalReflectionHelper, never()).isStatic(any(Method.class));
@@ -90,7 +91,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 
 		when(internalReflectionHelper.isStatic(method)).thenReturn(false);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(method).trySetAccessible();
 		verify(method).invoke(bean);
@@ -121,7 +122,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 
 		when(internalReflectionHelper.isStatic(method)).thenReturn(true);
 
-		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@PostConstruct methods must be non-static", result.getMessage());
 		verify(method, never()).trySetAccessible();
@@ -162,7 +163,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
 		when(method.getAnnotation(PostConstruct.class)).thenReturn(annotation);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(method).trySetAccessible();
 		verify(method).invoke(bean, modBus);
@@ -202,7 +203,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(annotation.value()).thenReturn(PostConstruct.Bus.GAME);
 		when(method.getAnnotation(PostConstruct.class)).thenReturn(annotation);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(method).trySetAccessible();
 		verify(method).invoke(bean, NeoForge.EVENT_BUS);
@@ -242,7 +243,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
 		when(method.getAnnotation(PostConstruct.class)).thenReturn(annotation);
 
-		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@PostConstruct methods must not have parameters or only have one or two IEventBus parameter(s)", result.getMessage());
 		verify(method).trySetAccessible();
@@ -284,7 +285,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
 		when(method.getAnnotation(PostConstruct.class)).thenReturn(annotation);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(method).trySetAccessible();
 		verify(method).invoke(bean, modBus, NeoForge.EVENT_BUS);
@@ -325,7 +326,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(annotation.value()).thenReturn(PostConstruct.Bus.GAME);
 		when(method.getAnnotation(PostConstruct.class)).thenReturn(annotation);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(method).trySetAccessible();
 		verify(method).invoke(bean, NeoForge.EVENT_BUS, modBus);
@@ -366,7 +367,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
 		when(method.getAnnotation(PostConstruct.class)).thenReturn(annotation);
 
-		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@PostConstruct methods must not have parameters or only have one or two IEventBus parameter(s)", result.getMessage());
 		verify(method).trySetAccessible();
@@ -409,7 +410,7 @@ public class PostConstructAnnotationFinalizeBeanProcessorTest {
 		when(annotation.value()).thenReturn(PostConstruct.Bus.MOD);
 		when(method.getAnnotation(PostConstruct.class)).thenReturn(annotation);
 
-		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@PostConstruct methods must not have parameters or only have one or two IEventBus parameter(s)", result.getMessage());
 		verify(method).trySetAccessible();

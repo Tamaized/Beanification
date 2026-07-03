@@ -14,6 +14,7 @@ import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
@@ -56,7 +57,7 @@ public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenReturn(Stream.empty());
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 	}
 
 	@Test
@@ -97,7 +98,7 @@ public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 
 		when(context.fuzzyInjector()).thenReturn(Optional.of(_ -> deps));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		verify(field).set(bean, deps);
 	}
@@ -116,7 +117,7 @@ public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 		beanMap.put(new BeanDefinition<>(TestBeanRecord.class, null), bean);
 		when(context.beansToProcess()).thenReturn(Optional.of(beanMap));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 	}
 
 	@Test
@@ -157,7 +158,7 @@ public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 		doReturn(Type.getType(TestBean.class)).when(classData).clazz();
 		when(scanData.getClasses()).thenReturn(Set.of(classData));
 
-		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException result = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@Directory fields must be non-static inside Beans", result.getMessage());
 

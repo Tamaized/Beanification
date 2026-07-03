@@ -6,6 +6,11 @@ import tamaized.beanification.BeanContext;
 
 public interface IBeanProcessor {
 
-	void process(BeanContext.BeanLifeCycleContext context, ModContainer modContainer, ModFileScanData scanData) throws Throwable;
+	void process(
+		BeanContext.BeanLifeCycleContext context,
+		ModContainer modContainer,
+		ModFileScanData scanData,
+		BeanAnnotationProcessorMetadata metadata
+	) throws Throwable;
 
 }

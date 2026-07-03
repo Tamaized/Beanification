@@ -12,6 +12,7 @@ import tamaized.beanification.CircularDependencyException;
 import tamaized.beanification.TestBean;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.construct.ConstructBeanProcessor;
 
 import java.util.HashMap;
@@ -37,7 +38,7 @@ public class DependencyValidateBeanProcessorTests {
 
 		when(context.dependencies()).thenReturn(Optional.of(new HashMap<>()));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 	}
 
 	@Test
@@ -51,7 +52,7 @@ public class DependencyValidateBeanProcessorTests {
 		depMap.put(new BeanDefinition<>(TestBean.class, "B"), List.of(new BeanDefinition<>(TestBean.class, "C")));
 		when(context.dependencies()).thenReturn(Optional.of(depMap));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 	}
 
 	@Test
@@ -65,7 +66,7 @@ public class DependencyValidateBeanProcessorTests {
 		depMap.put(new BeanDefinition<>(TestBean.class, "B"), List.of(new BeanDefinition<>(TestBean.class, "A")));
 		when(context.dependencies()).thenReturn(Optional.of(depMap));
 
-		assertThrows(CircularDependencyException.class, () -> instance.process(context, modContainer, scanData));
+		assertThrows(CircularDependencyException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 	}
 
 }

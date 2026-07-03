@@ -4,11 +4,13 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.apache.commons.lang3.function.TriConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tamaized.beanification.internal.AdditionalModuleNamesProvider;
 import tamaized.beanification.internal.BeanContextConfig;
 import tamaized.beanification.internal.DistAnnotationRetriever;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.IBeanProcessor;
 import tamaized.beanification.processors.BeanProcessor;
 
@@ -18,6 +20,7 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public final class BeanContext extends AbstractBeanContext {
@@ -44,6 +47,8 @@ public final class BeanContext extends AbstractBeanContext {
 	@Nullable
 	private ContainerContext currentContainerContext = null;
 
+	BeanAnnotationProcessorMetadata beanAnnotationProcessorMetadata = new BeanAnnotationProcessorMetadata();
+
 	private BeanContext() {
 		InternalBeanContext.injectInto(this);
 	}
@@ -63,10 +68,10 @@ public final class BeanContext extends AbstractBeanContext {
 	 * Should be called as early as possible to avoid null bean injections
 	 */
 	public static void init(String modid) {
-		INSTANCE.initInternal(modid);
+		INSTANCE.initInternal(modid, (_) -> {});
 	}
 
-	void initInternal(String modid) {
+	void initInternal(String modid, Consumer<TriConsumer<Class<?>, @org.jspecify.annotations.Nullable String, Object>> extraRegister) {
 		final long ms = System.currentTimeMillis();
 		LOGGER.info("Starting Bean Context");
 		if (isFrozen())
@@ -75,6 +80,7 @@ public final class BeanContext extends AbstractBeanContext {
 		lifeCycle = BeanLifeCycle.Start;
 
 		registerInternal(BeanContext.class, null, this);
+		extraRegister.accept(this::registerInternal);
 
 		ModContainer modContainer = ModList.get().getModContainerById(modid).orElseThrow(() -> new RuntimeException("Where is " + modid + "???!"));
 
@@ -89,7 +95,7 @@ public final class BeanContext extends AbstractBeanContext {
 		try {
 			LOGGER.debug("Registering Bean annotation processors");
 			beanProcessors.clear();
-			for (Iterator<? extends Class<?>> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, BeanProcessor.class).map(a -> {
+			for (Iterator<? extends Class<?>> it = distAnnotationRetriever.retrieve(modid.equals("beanification"), scanData, ElementType.TYPE, BeanProcessor.class).map(a -> {
 				try {
 					return Class.forName(a.clazz().getClassName());
 				} catch (ClassNotFoundException e) {
@@ -216,7 +222,7 @@ public final class BeanContext extends AbstractBeanContext {
 		for (IBeanProcessor beanProcessor : beanProcessors.get(lifeCycle)) {
 			if (INSTANCE.lifeCycle != BeanLifeCycle.Complete || config.loggingSettings().isInjectIntoEnabled())
 				LOGGER.debug("Running processor {}", beanProcessor.getClass());
-			beanProcessor.process(lifeCycleContext, modContainer, scanData);
+			beanProcessor.process(lifeCycleContext, modContainer, scanData, beanAnnotationProcessorMetadata);
 		}
 	}
 

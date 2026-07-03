@@ -14,10 +14,10 @@ import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
@@ -73,7 +73,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		ModContainer modContainer = mock(ModContainer.class);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(beanInstance, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
@@ -107,7 +107,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		ModContainer modContainer = mock(ModContainer.class);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("Duplicate bean detected - {Type: Ltamaized/beanification/TestBean;, Name: null}", exception.getMessage());
 
@@ -142,7 +142,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		ModContainer modContainer = mock(ModContainer.class);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(beanInstance, gatherMap.get(new BeanDefinition<>(TestBean.class, "test")).get());
@@ -211,7 +211,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		ModContainer modContainer = mock(ModContainer.class);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(beanInstance, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
@@ -256,7 +256,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		ModContainer modContainer = mock(ModContainer.class);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 
@@ -291,7 +291,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		ModContainer modContainer = mock(ModContainer.class);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertTrue(gatherMap.isEmpty());
 	}
@@ -324,7 +324,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		ModContainer modContainer = mock(ModContainer.class);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@Bean methods must be static", exception.getMessage());
 
@@ -351,7 +351,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 		ModContainer modContainer = mock(ModContainer.class);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData));
+		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
 
 		assertTrue(gatherMap.isEmpty());
 	}
