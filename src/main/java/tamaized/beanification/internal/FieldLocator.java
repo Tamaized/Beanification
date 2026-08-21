@@ -5,9 +5,6 @@ import org.jetbrains.annotations.ApiStatus;
 import tamaized.beanification.*;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.List;
 
 @ApiStatus.Internal
 public class FieldLocator {

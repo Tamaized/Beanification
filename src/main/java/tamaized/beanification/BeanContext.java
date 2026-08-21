@@ -122,6 +122,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.of(currentInjection),
 				Optional.of(definition -> injectInternal(definition.type(), definition.name())),
+				Optional.of(definition -> injectLazyUnchecked(definition.type(), definition.name())),
 				Optional.of(this::injectFuzzyInternal),
 				Optional.empty()
 			);
@@ -131,6 +132,7 @@ public final class BeanContext extends AbstractBeanContext {
 			lifeCycleContext = new BeanLifeCycleContext(
 				Optional.of(Collections.unmodifiableMap(lifeCycleContext.gather.orElseThrow())),
 				Optional.of(new HashMap<>()),
+				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
@@ -148,6 +150,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
+				Optional.empty(),
 				Optional.empty()
 			);
 			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
@@ -157,6 +160,7 @@ public final class BeanContext extends AbstractBeanContext {
 				lifeCycleContext.gather,
 				lifeCycleContext.dependencies,
 				Optional.of((definition, bean) -> registerInternal(definition.type(), definition.name(), bean)),
+				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
@@ -173,6 +177,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.of(currentInjection),
 				Optional.of(definition -> injectChecked(definition.type(), definition.name()).orElse(null)),
+				Optional.of(definition -> injectLazyUnchecked(definition.type(), definition.name())),
 				Optional.of(this::injectFuzzyInternal),
 				Optional.of(getBeans())
 			);
@@ -186,6 +191,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.of(currentInjection),
 				Optional.of(definition -> injectChecked(definition.type(), definition.name()).orElse(null)),
+				Optional.of(definition -> injectLazyUnchecked(definition.type(), definition.name())),
 				Optional.of(this::injectFuzzyInternal),
 				Optional.of(getBeans())
 			);
@@ -198,6 +204,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty(),
 				Optional.of(currentInjection),
+				Optional.empty(),
 				Optional.empty(),
 				Optional.empty(),
 				Optional.of(getBeans())
@@ -257,6 +264,7 @@ public final class BeanContext extends AbstractBeanContext {
 					Optional.empty(),
 					Optional.of(curInj),
 					Optional.of(definition -> INSTANCE.injectChecked(definition.type(), definition.name()).orElse(null)),
+					Optional.of(definition -> injectLazyUnchecked(definition.type(), definition.name())),
 					Optional.of(INSTANCE::injectFuzzyInternal),
 					Optional.of(Map.of(new BeanDefinition<>(object.getClass(), null), object))
 				),
@@ -291,6 +299,12 @@ public final class BeanContext extends AbstractBeanContext {
 		return Optional.empty();
 	}
 
+	private <T> Optional<Supplier<T>> injectCheckedLazy(Class<T> type, @Nullable String name) {
+		if (INSTANCE.getBeans().containsKey(new BeanDefinition<>(type, name)))
+			return Optional.of(injectLazy(type, name));
+		return Optional.empty();
+	}
+
 	public static <T> T inject(Class<T> type) {
 		return inject(type, null);
 	}
@@ -307,12 +321,17 @@ public final class BeanContext extends AbstractBeanContext {
 		return Suppliers.memoize(() -> INSTANCE.injectInternal(type, name));
 	}
 
+	private static <T> Supplier<Object> injectLazyUnchecked(Class<T> type, @Nullable String name) {
+		return Suppliers.memoize(() -> INSTANCE.injectInternal(type, name));
+	}
+
 	public record BeanLifeCycleContext(
 		Optional<Map<BeanDefinition<?>, ThrowingSupplier<Object>>> gather,
 		Optional<Map<BeanDefinition<?>, List<BeanDefinition<?>>>> dependencies,
 		Optional<BiConsumer<BeanDefinition<?>, Object>> register,
 		Optional<AtomicReference<Object>> currentInjection,
 		Optional<Function<BeanDefinition<?>, Object>> strictInjector,
+		Optional<Function<BeanDefinition<?>, Supplier<Object>>> lazyInjector,
 		Optional<Function<Class<?>, List<?>>> fuzzyInjector,
 		Optional<Map<BeanDefinition<?>, Object>> beansToProcess
 	) {
