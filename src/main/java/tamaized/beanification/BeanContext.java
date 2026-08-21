@@ -299,12 +299,6 @@ public final class BeanContext extends AbstractBeanContext {
 		return Optional.empty();
 	}
 
-	private <T> Optional<Supplier<T>> injectCheckedLazy(Class<T> type, @Nullable String name) {
-		if (INSTANCE.getBeans().containsKey(new BeanDefinition<>(type, name)))
-			return Optional.of(injectLazy(type, name));
-		return Optional.empty();
-	}
-
 	public static <T> T inject(Class<T> type) {
 		return inject(type, null);
 	}
