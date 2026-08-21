@@ -1,8 +1,8 @@
 package tamaized.beanification;
 
+import com.google.common.base.Suppliers;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.commons.lang3.function.TriConsumer;
 import org.apache.logging.log4j.LogManager;
@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public final class BeanContext extends AbstractBeanContext {
 
@@ -298,12 +299,12 @@ public final class BeanContext extends AbstractBeanContext {
 		return INSTANCE.injectInternal(type, name);
 	}
 
-	public static <T> Lazy<T> injectLazy(Class<T> type) {
+	public static <T> Supplier<T> injectLazy(Class<T> type) {
 		return injectLazy(type, null);
 	}
 
-	public static <T> Lazy<T> injectLazy(Class<T> type, @Nullable String name) {
-		return Lazy.of(() -> INSTANCE.injectInternal(type, name));
+	public static <T> Supplier<T> injectLazy(Class<T> type, @Nullable String name) {
+		return Suppliers.memoize(() -> INSTANCE.injectInternal(type, name));
 	}
 
 	public record BeanLifeCycleContext(
