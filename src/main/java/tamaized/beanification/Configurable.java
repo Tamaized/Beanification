@@ -12,7 +12,7 @@ import java.lang.annotation.*;
  * This even works for classes that have not actually defined a constructor in their source code.</p>
  * </p>
  * <p>
- * {@code @Configurable} classes may use both static and non-static autowired as these classes are NOT true beans.
+ * {@code @Configurable} classes are treated as beans during {@link BeanContext#injectInto(Object)} and so {@link Autowired} fields MUST be non-static!
  * </p>
  */
 @Target(ElementType.TYPE)

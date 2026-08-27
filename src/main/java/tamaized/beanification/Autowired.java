@@ -16,7 +16,6 @@ import java.lang.annotation.Target;
  * Fields may be private.<br/>
  * When used inside a Bean the field must be non-static.<br/>
  * When used outside a Bean, the field <b>must</b> be <b>static</b>!</br>
- * {@link Configurable} is special in that both static and non-static fields are accepted.
  * <p>
  * Can also be applied to {@link Bean} method parameters and {@link Component} constructor parameters.
  * </p>
