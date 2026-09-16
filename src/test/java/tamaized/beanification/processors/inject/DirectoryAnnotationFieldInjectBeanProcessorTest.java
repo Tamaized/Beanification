@@ -12,6 +12,7 @@ import tamaized.beanification.directory.DirectoryOtherTestBean;
 import tamaized.beanification.directory.DirectoryTestBean;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
@@ -33,6 +34,9 @@ public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 
 	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
+
+	@Mock
+	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
 
 	@InjectMocks
 	private DirectoryAnnotationFieldInjectBeanProcessor instance;
@@ -77,7 +81,8 @@ public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenAnswer(invocation -> Stream.of(data));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenAnswer(_ -> Stream.of(data));
+		when(requiredModIdsAnnotationDataPredicateFactory.filter(data)).thenReturn(true);
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), TestBean.class)).thenReturn(true);
 
@@ -135,7 +140,8 @@ public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenAnswer(invocation -> Stream.of(data));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)).thenAnswer(_ -> Stream.of(data));
+		when(requiredModIdsAnnotationDataPredicateFactory.filter(data)).thenReturn(true);
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), TestBean.class)).thenReturn(true);
 

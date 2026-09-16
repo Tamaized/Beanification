@@ -10,7 +10,6 @@ import net.neoforged.fml.loading.modscan.Scanner;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
 import tamaized.beanification.InternalAutowired;
 
 import java.io.IOException;

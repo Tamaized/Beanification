@@ -24,4 +24,6 @@ public @interface LazyAutowired {
 
 	Dist[] dist() default {};
 
+	String[] requiresModIdsLoaded() default {};
+
 }

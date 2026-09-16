@@ -10,6 +10,7 @@ import org.objectweb.asm.Type;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
@@ -34,6 +35,9 @@ public class AutowiredAnnotationFieldInjectBeanProcessorTest {
 
 	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
+
+	@Mock
+	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
 
 	@InjectMocks
 	private AutowiredAnnotationFieldInjectBeanProcessor instance;
@@ -78,7 +82,8 @@ public class AutowiredAnnotationFieldInjectBeanProcessorTest {
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(invocation -> Stream.of(data));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(_ -> Stream.of(data));
+		when(requiredModIdsAnnotationDataPredicateFactory.filter(data)).thenReturn(true);
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), TestBean.class)).thenReturn(true);
 
@@ -133,7 +138,8 @@ public class AutowiredAnnotationFieldInjectBeanProcessorTest {
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(data.clazz()).thenReturn(Type.getType(TestBean.class));
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(invocation -> Stream.of(data));
+		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(_ -> Stream.of(data));
+		when(requiredModIdsAnnotationDataPredicateFactory.filter(data)).thenReturn(true);
 
 		when(internalReflectionHelper.classOrSuperEquals(Type.getType(TestBean.class), TestBean.class)).thenReturn(true);
 

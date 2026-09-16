@@ -32,4 +32,6 @@ public @interface Autowired {
 
 	Dist[] dist() default {};
 
+	String[] requiresModIdsLoaded() default {};
+
 }

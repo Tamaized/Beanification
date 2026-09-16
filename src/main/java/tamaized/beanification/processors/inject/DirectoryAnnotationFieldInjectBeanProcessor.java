@@ -5,6 +5,7 @@ import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.processors.BeanAnnotationProcessorClassMetadata;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
@@ -22,6 +23,9 @@ public class DirectoryAnnotationFieldInjectBeanProcessor implements IBeanProcess
 
 	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
+
+	@InternalAutowired
+	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
 
 	@Override
 	public void process(
@@ -58,7 +62,9 @@ public class DirectoryAnnotationFieldInjectBeanProcessor implements IBeanProcess
 				continue;
 
 			for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)
-				.filter(a -> internalReflectionHelper.classOrSuperEquals(a.clazz(), bean.getClass())).iterator(); it.hasNext();
+				.filter(requiredModIdsAnnotationDataPredicateFactory::filter)
+				.filter(a -> internalReflectionHelper.classOrSuperEquals(a.clazz(), bean.getClass()))
+				.iterator(); it.hasNext();
 			) {
 				ModFileScanData.AnnotationData data = it.next();
 				for (Field field : internalReflectionHelper.getAllDirectoryFieldsIncludingSuper(bean.getClass(), data.memberName())) {

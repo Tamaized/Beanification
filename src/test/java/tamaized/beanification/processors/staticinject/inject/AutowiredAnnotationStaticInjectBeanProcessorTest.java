@@ -10,6 +10,7 @@ import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.FieldLocator;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
@@ -33,6 +34,9 @@ public class AutowiredAnnotationStaticInjectBeanProcessorTest {
 	private InternalReflectionHelper internalReflectionHelper;
 
 	@Mock
+	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
+
+	@Mock
 	private FieldLocator fieldLocator;
 
 	@InjectMocks
@@ -54,6 +58,7 @@ public class AutowiredAnnotationStaticInjectBeanProcessorTest {
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(_ -> Stream.of(data));
+		when(requiredModIdsAnnotationDataPredicateFactory.filter(data)).thenReturn(true);
 
 		Field field = mockField();
 		when(fieldLocator.locate(context, data)).thenReturn(field);
@@ -77,6 +82,7 @@ public class AutowiredAnnotationStaticInjectBeanProcessorTest {
 
 		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
 		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)).thenAnswer(_ -> Stream.of(data));
+		when(requiredModIdsAnnotationDataPredicateFactory.filter(data)).thenReturn(true);
 
 		Field field = mockField();
 		when(fieldLocator.locate(context, data)).thenReturn(field);

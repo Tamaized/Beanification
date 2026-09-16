@@ -6,6 +6,7 @@ import tamaized.beanification.*;
 import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.FieldLocator;
 import tamaized.beanification.internal.InternalReflectionHelper;
+import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
@@ -26,6 +27,9 @@ public class DirectoryAnnotationStaticFieldInjectBeanProcessor implements IBeanP
 	@InternalAutowired
 	private FieldLocator fieldLocator;
 
+	@InternalAutowired
+	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
+
 	@Override
 	public void process(
 		BeanContext.BeanLifeCycleContext context,
@@ -33,7 +37,9 @@ public class DirectoryAnnotationStaticFieldInjectBeanProcessor implements IBeanP
 		ModFileScanData scanData,
 		BeanAnnotationProcessorMetadata metadata
 	) throws Throwable {
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class).iterator(); it.hasNext(); ) {
+		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)
+			.filter(requiredModIdsAnnotationDataPredicateFactory::filter)
+			.iterator(); it.hasNext(); ) {
 			ModFileScanData.AnnotationData data = it.next();
 			Field field = fieldLocator.locate(context, data);
 			if (internalReflectionHelper.isStatic(field)) {
