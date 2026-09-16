@@ -115,6 +115,11 @@ public class InternalReflectionHelperTests {
 			public Dist[] dist() {
 				return new Dist[0];
 			}
+
+			@Override
+			public String[] requiresModIdsLoaded() {
+				return new String[0];
+			}
 		};
 	}
 
@@ -149,6 +154,11 @@ public class InternalReflectionHelperTests {
 			@Override
 			public Class<?> value() {
 				return TestBean.class;
+			}
+
+			@Override
+			public String[] requiresModIdsLoaded() {
+				return new String[0];
 			}
 
 		};
