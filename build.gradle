@@ -241,6 +241,11 @@ tasks.register('gradlePluginJar', ShadowJar) {
 	from sourceSets.gradle.output
 	configurations = [this.project.configurations.shade]
 	relocate 'org.objectweb.asm', 'tamaized.beanification.objectweb.asm'
+	manifest {
+		attributes([
+			'Premain-Class': 'tamaized.beanification.gradle.asm.ConfigurableHotswapAgent'
+		])
+	}
 }
 
 tasks.withType(JavaCompile).configureEach {

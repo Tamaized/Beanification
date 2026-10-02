@@ -8,8 +8,8 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
+import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.JavaPluginExtension
-import org.jetbrains.gradle.ext.IdeaExtPlugin
 import tamaized.beanification.gradle.asm.CompileTimeTransformer
 
 class BeanificationPlugin implements Plugin<Project> {
@@ -42,20 +42,20 @@ class BeanificationPlugin implements Plugin<Project> {
 						it.include '**/*.class'
 					}.each { file ->
 						println "Processing: ${file.getName()}"
-						CompileTimeTransformer.processClassFile(file)
+						CompileTimeTransformer.processClassFile(file) { Logging.getLogger(BeanificationPlugin).lifecycle(it) }
 					}
 				}
 			}
 		}
 
+		def pluginJar = new File(BeanificationPlugin.class.protectionDomain.codeSource.location.toURI())
+
 		project.extensions.getByType(ModDevExtension).runs {
 			configureEach {
 				taskBefore taskIdea
+				if (pluginJar.name.endsWith('.jar'))
+					jvmArgument "-javaagent:${pluginJar.absolutePath}"
 			}
-		}
-
-		project.rootProject.plugins.withType(IdeaExtPlugin).configureEach {
-			project.rootProject.idea.project.settings.taskTriggers.afterBuild taskIdea
 		}
 
 		def task = project.tasks.register("beanificationTransformClasses") {
@@ -78,7 +78,7 @@ class BeanificationPlugin implements Plugin<Project> {
 					it.include '**/*.class'
 				}.each { file ->
 					println "Processing: ${file.getName()}"
-					CompileTimeTransformer.processClassFile(file)
+					CompileTimeTransformer.processClassFile(file) { Logging.getLogger(BeanificationPlugin).lifecycle(it) }
 				}
 				//outputFile.text = "${new Date()}"
 			}
