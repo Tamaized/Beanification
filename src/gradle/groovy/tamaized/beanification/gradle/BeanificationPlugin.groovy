@@ -9,6 +9,7 @@ import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.plugins.JavaPluginExtension
+import org.jetbrains.gradle.ext.IdeaExtPlugin
 import tamaized.beanification.gradle.asm.CompileTimeTransformer
 
 class BeanificationPlugin implements Plugin<Project> {
@@ -51,6 +52,10 @@ class BeanificationPlugin implements Plugin<Project> {
 			configureEach {
 				taskBefore taskIdea
 			}
+		}
+
+		project.rootProject.plugins.withType(IdeaExtPlugin).configureEach {
+			project.rootProject.idea.project.settings.taskTriggers.afterBuild taskIdea
 		}
 
 		def task = project.tasks.register("beanificationTransformClasses") {
