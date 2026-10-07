@@ -10,6 +10,7 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.compile.JavaCompile
 import tamaized.beanification.gradle.asm.CompileTimeTransformer
 
 class BeanificationPlugin implements Plugin<Project> {
@@ -58,34 +59,18 @@ class BeanificationPlugin implements Plugin<Project> {
 			}
 		}
 
-		def task = project.tasks.register("beanificationTransformClasses") {
-			mustRunAfter 'classes'
-
-			// inputs.files(project.fileTree("src/main/java"))
-			// def outputFile = project.layout.buildDirectory.file("beanificationTaskOutput.txt").get().asFile
-			// outputs.file(outputFile)
-			outputs.upToDateWhen {
-				false
-			}
-
-			def outputDir = project.providers.provider {
-				project.extensions.getByType(JavaPluginExtension).sourceSets.main.output.classesDirs
-			}
+		project.tasks.withType(JavaCompile).configureEach {
+			def outputDir = it.destinationDirectory
 			it.doLast {
 				def tree = outputDir.get().asFileTree
-				println "Tree (Classes): ${tree}"
+				println "Tree (Gradle-JavaCompile): ${tree}"
 				tree.matching {
 					it.include '**/*.class'
 				}.each { file ->
 					println "Processing: ${file.getName()}"
 					CompileTimeTransformer.processClassFile(file) { Logging.getLogger(BeanificationPlugin).lifecycle(it) }
 				}
-				//outputFile.text = "${new Date()}"
 			}
-		}
-		def classesTask = project.tasks.named('classes')
-		project.afterEvaluate {
-			classesTask.get().finalizedBy(task)
 		}
 	}
 

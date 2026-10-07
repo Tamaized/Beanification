@@ -145,7 +145,7 @@ plugins {
 apply plugin: 'tamaized.beanification'
 ```
 
-### This only works for Intellij run configs and the gradle classes (build) task! Other IDEs are unsupported at this time.
+### This only works for Intellij run configs and Gradle's Java compile tasks! Other IDEs are unsupported at this time.
 
 ```java
 @Configurable
