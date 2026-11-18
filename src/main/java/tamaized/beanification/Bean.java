@@ -1,7 +1,5 @@
 package tamaized.beanification;
 
-import net.neoforged.api.distmarker.Dist;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -23,8 +21,6 @@ public @interface Bean {
 	 * Used to create a named bean.
 	 */
 	String value() default Component.DEFAULT_VALUE;
-
-	Dist[] dist() default {};
 
 	int priority() default 0;
 

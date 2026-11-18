@@ -8,6 +8,14 @@
 - Redistribution of this library as a standalone product is prohibited.
 - Attribution is not required.
 
+## Connectors
+This project is meant to be combined with a "Connector" in order to be used with a framework or just basic Java.
+
+Use [FMLBeanContextConnector#init](src/main/java/tamaized/beanification/connector/fml/FMLBeanContextConnector.java) for NeoForge.
+Note: This will be split out into its own project at some point.
+
+# Everything below is Legacy and only applies to version 1.X.Y
+
 ## Version Table
 
 | MC Version       | Version | Tested |

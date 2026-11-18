@@ -1,15 +1,12 @@
 package tamaized.beanification.processors.inject;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
-import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.processors.BeanAnnotationProcessorClassMetadata;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
@@ -19,19 +16,12 @@ import java.util.*;
 public class AutowiredAnnotationFieldInjectBeanProcessor implements IBeanProcessor {
 
 	@InternalAutowired
-	private DistAnnotationRetriever distAnnotationRetriever;
-
-	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
-
-	@InternalAutowired
-	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
 
 	@Override
 	public void process(
 		BeanContext.BeanLifeCycleContext context,
-		ModContainer modContainer,
-		ModFileScanData scanData,
+		List<AnnotationScanData> scanData,
 		BeanAnnotationProcessorMetadata metadata
 	) throws Throwable {
 		for (Map.Entry<BeanDefinition<?>, Object> entry : context.beansToProcess().orElseThrow().entrySet()) {
@@ -59,16 +49,16 @@ public class AutowiredAnnotationFieldInjectBeanProcessor implements IBeanProcess
 			if (foundEntry)
 				continue;
 
-			for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)
-				.filter(requiredModIdsAnnotationDataPredicateFactory::filter)
-				.filter(a -> internalReflectionHelper.classOrSuperEquals(a.clazz(), bean.getClass()))
+			for (Iterator<AnnotationScanData.AnnotationData> it = scanData.stream()
+				.flatMap(data -> data.filtered(ElementType.FIELD, Autowired.class))
+				.filter(a -> internalReflectionHelper.classOrSuperEquals(a.member().metadata().clazz(), bean.getClass()))
 				.iterator(); it.hasNext();
 			) {
-				ModFileScanData.AnnotationData data = it.next();
+				AnnotationScanData.AnnotationData data = it.next();
 				Optional<String> name = Optional.ofNullable(data.annotationData().get("value"))
 					.filter(String.class::isInstance)
 					.map(String.class::cast);
-				for (Field field : internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(bean.getClass(), data.memberName(), name.orElse(Component.DEFAULT_VALUE))) {
+				for (Field field : internalReflectionHelper.getAllAutowiredFieldsIncludingSuper(bean.getClass(), data.member().metadata().memberName(),name.orElse(Component.DEFAULT_VALUE))) {
 					context.currentInjection().orElseThrow().set(field);
 					if (internalReflectionHelper.isStatic(field)) {
 						throw new IllegalStateException("@Autowired fields must be non-static inside Beans");

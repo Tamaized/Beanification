@@ -1,11 +1,9 @@
 package tamaized.beanification;
 
-import org.jetbrains.annotations.ApiStatus;
+import org.jspecify.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
-@ApiStatus.Internal
 abstract class AbstractBeanContext {
 
 	private Map<BeanDefinition<?>, Object> BEANS = new HashMap<>();

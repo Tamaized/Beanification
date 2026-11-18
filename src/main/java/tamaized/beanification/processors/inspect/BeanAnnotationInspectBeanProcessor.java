@@ -1,23 +1,18 @@
 package tamaized.beanification.processors.inspect;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DependencyInspector;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.ElementType;
 import java.util.*;
 
 @BeanProcessor(value = BeanLifeCycle.Inspect, priority = 1)
 public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
-
-	@InternalAutowired
-	private DistAnnotationRetriever distAnnotationRetriever;
 
 	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
@@ -28,15 +23,17 @@ public class BeanAnnotationInspectBeanProcessor implements IBeanProcessor {
 	@Override
 	public void process(
 		BeanContext.BeanLifeCycleContext context,
-		ModContainer modContainer,
-		ModFileScanData scanData,
+		List<AnnotationScanData> scanData,
 		BeanAnnotationProcessorMetadata metadata
 	) throws Throwable {
 		List<Data> list = new ArrayList<>();
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class).iterator(); it.hasNext(); ) {
-			ModFileScanData.AnnotationData data = it.next();
-			Class<?> parent = Class.forName(data.clazz().getClassName());
-			internalReflectionHelper.getDeclaredMethodsForName(parent, data.memberName()).stream()
+		for (Iterator<AnnotationScanData.AnnotationData> it = scanData.stream()
+			.flatMap(data -> data.filtered(ElementType.METHOD, Bean.class))
+			.iterator(); it.hasNext();
+		) {
+			AnnotationScanData.AnnotationData data = it.next();
+			Class<?> parent = Class.forName(data.member().metadata().clazz().className());
+			internalReflectionHelper.getDeclaredMethodsForName(parent, data.member().metadata().memberName()).stream()
 				.filter(method -> method.isAnnotationPresent(Bean.class))
 				.forEach(method -> {
 					method.trySetAccessible();

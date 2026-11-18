@@ -1,7 +1,5 @@
 package tamaized.beanification.processors.construct;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -30,8 +28,6 @@ public class ConstructBeanProcessorTests {
 	@SuppressWarnings("unchecked")
 	public void process() {
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		when(context.dependencies()).thenReturn(Optional.of(new HashMap<>()));
 
@@ -45,7 +41,7 @@ public class ConstructBeanProcessorTests {
 		BiConsumer<BeanDefinition<?>, Object> consumer = mock(BiConsumer.class);
 		when(context.register()).thenReturn(Optional.of(consumer));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, List.of(), new BeanAnnotationProcessorMetadata()));
 
 		verify(consumer).accept(new BeanDefinition<>(TestBean.class, "A"), beanA);
 		verify(consumer).accept(new BeanDefinition<>(TestBean.class, "B"), beanB);
@@ -55,8 +51,6 @@ public class ConstructBeanProcessorTests {
 	@SuppressWarnings("unchecked")
 	public void processWithDeps() {
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
 
 		Map<BeanDefinition<?>, List<BeanDefinition<?>>> depMap = new HashMap<>();
 		depMap.put(new BeanDefinition<>(TestBean.class, "A"), List.of(new BeanDefinition<>(TestBean.class, "B")));
@@ -72,7 +66,7 @@ public class ConstructBeanProcessorTests {
 		BiConsumer<BeanDefinition<?>, Object> consumer = mock(BiConsumer.class);
 		when(context.register()).thenReturn(Optional.of(consumer));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, List.of(), new BeanAnnotationProcessorMetadata()));
 
 		InOrder verifyInOrder = inOrder(consumer);
 		verifyInOrder.verify(consumer).accept(new BeanDefinition<>(TestBean.class, "B"), beanB);

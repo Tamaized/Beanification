@@ -1,22 +1,19 @@
 package tamaized.beanification;
 
-import com.google.common.base.Suppliers;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModList;
-import net.neoforged.neoforgespi.language.ModFileScanData;
-import org.apache.commons.lang3.function.TriConsumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import tamaized.beanification.internal.AdditionalModuleNamesProvider;
+import org.jspecify.annotations.Nullable;
 import tamaized.beanification.internal.BeanContextConfig;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.IBeanProcessor;
 import tamaized.beanification.processors.BeanProcessor;
+import tamaized.beanification.scan.AnnotationScanData;
+import tamaized.beanification.scan.ScanCondition;
+import tamaized.beanification.util.LoggerWrapper;
+import tamaized.beanification.util.SimpleMemoize;
+import tamaized.beanification.util.SysoutLoggerWrapper;
 
-import javax.annotation.Nullable;
 import java.lang.annotation.ElementType;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -26,8 +23,6 @@ import java.util.function.Supplier;
 
 public final class BeanContext extends AbstractBeanContext {
 
-	private static final Logger LOGGER = LogManager.getLogger(BeanContext.class);
-
 	static BeanContext INSTANCE = new BeanContext();
 
 	@Nullable
@@ -36,17 +31,18 @@ public final class BeanContext extends AbstractBeanContext {
 	@InternalAutowired
 	private BeanContextConfig config;
 
-	@InternalAutowired
-	private AdditionalModuleNamesProvider additionalModuleNamesProvider;
+	private final List<ContextConnector> connectors = new ArrayList<>();
 
-	@InternalAutowired
-	private DistAnnotationRetriever distAnnotationRetriever;
-
-	private BeanLifeCycle lifeCycle = BeanLifeCycle.Start;
 	private final Map<BeanLifeCycle, List<IBeanProcessor>> beanProcessors = new HashMap<>();
 
+	private final Map<BeanDefinition<?>, Object> connectorBeans = new HashMap<>();
+
+	private LoggerWrapper logger = new SysoutLoggerWrapper();
+
 	@Nullable
-	private ContainerContext currentContainerContext = null;
+	private List<AnnotationScanData> cachedScanData;
+
+	private BeanLifeCycle lifeCycle = BeanLifeCycle.Start;
 
 	BeanAnnotationProcessorMetadata beanAnnotationProcessorMetadata = new BeanAnnotationProcessorMetadata();
 
@@ -55,7 +51,7 @@ public final class BeanContext extends AbstractBeanContext {
 	}
 
 	/**
-	 * Must be called before {@link #init(String)} to have any effect.
+	 * Must be called before {@link #init(LoggerWrapper)}
 	 */
 	public static BeanContextConfig configure() {
 		return INSTANCE.config;
@@ -66,54 +62,72 @@ public final class BeanContext extends AbstractBeanContext {
 	}
 
 	/**
-	 * Should be called as early as possible to avoid null bean injections
+	 * Must be called before {@link #init(LoggerWrapper)}
 	 */
-	public static void init(String modid) {
-		INSTANCE.initInternal(modid, (_) -> {});
+	public static void registerConnectors(ContextConnector... connectors) {
+		INSTANCE.connectors.addAll(List.of(connectors));
 	}
 
-	void initInternal(String modid, Consumer<TriConsumer<Class<?>, @org.jspecify.annotations.Nullable String, Object>> extraRegister) {
+	/**
+	 * Should be called as early as possible to avoid null bean injections
+	 */
+	public static void init(LoggerWrapper logger) {
+		INSTANCE.initInternal(logger, (_) -> {});
+	}
+
+	void initInternal(
+		LoggerWrapper loggerWrapper,
+		Consumer<InternalBeanRegistrar> extraRegister
+	) {
+		logger = loggerWrapper;
 		final long ms = System.currentTimeMillis();
-		LOGGER.info("Starting Bean Context");
+		logger.info("Starting Bean Context");
 		if (isFrozen())
 			throw new IllegalStateException("Bean Context already frozen");
 		getBeans().clear();
+		connectorBeans.clear();
 		lifeCycle = BeanLifeCycle.Start;
 
 		registerInternal(BeanContext.class, null, this);
 		extraRegister.accept(this::registerInternal);
+		connectors.forEach(connector -> connector.registerInternalBeans(this::registerConnectorBean));
+		connectors.forEach(connector -> registerConnectorBean(connector.getClass(), null, connector));
+		connectors.forEach(connector -> registerInternal(connector.getClass(), null, connector));
+		connectorBeans.values().forEach(bean -> InternalBeanContext.injectInto(bean, connectorBeans));
 
-		ModContainer modContainer = ModList.get().getModContainerById(modid).orElseThrow(() -> new RuntimeException("Where is " + modid + "???!"));
+		List<ScanCondition> conditions = connectors.stream().flatMap(connector -> connector.conditions().stream()).toList();
+		List<AnnotationScanData> scanData = connectors.stream().map(connector -> connector.scan(conditions)).toList();
 
-		if (modContainer.getEventBus() == null)
-			throw new RuntimeException("Mod EventBus is null");
-
-		ModFileScanData scanData = modContainer.getModInfo().getOwningFile().getFile().getScanResult();
 		AtomicReference<Object> currentInjection = new AtomicReference<>();
 
-		additionalModuleNamesProvider.setup(config.scanSettings().getAdditionalComponentScanModuleNames());
-
 		try {
-			LOGGER.debug("Registering Bean annotation processors");
+			logger.debug("Registering Bean annotation processors");
 			beanProcessors.clear();
-			for (Iterator<? extends Class<?>> it = distAnnotationRetriever.retrieve(modid.equals("beanification"), scanData, ElementType.TYPE, BeanProcessor.class).map(a -> {
-				try {
-					return Class.forName(a.clazz().getClassName());
-				} catch (ClassNotFoundException e) {
-					throw new RuntimeException(e);
-				}
-			}).sorted(Comparator.comparingInt(c -> c.getAnnotation(BeanProcessor.class).priority())).iterator(); it.hasNext(); ) {
-				Class<?> c = it.next();
-				if (IBeanProcessor.class.isAssignableFrom(c)) {
-					beanProcessors.computeIfAbsent(c.getAnnotation(BeanProcessor.class).value(), k -> new ArrayList<>())
-						.add((IBeanProcessor) c.getConstructor().newInstance());
-					LOGGER.debug("Registered Bean processor: {}", c);
-				} else {
-					throw new RuntimeException("Bean processor must implement IBeanProcessor: " + c);
-				}
-			}
+			scanData.stream()
+				.flatMap(data -> data.filtered(ElementType.TYPE, BeanProcessor.class))
+				.map(data -> {
+					try {
+						return Class.forName(data.member().metadata().clazz().className());
+					} catch (ClassNotFoundException e) {
+						throw new RuntimeException(e);
+					}
+				})
+				.sorted(Comparator.comparingInt(c -> c.getAnnotation(BeanProcessor.class).priority()))
+				.forEach(c -> {
+					if (IBeanProcessor.class.isAssignableFrom(c)) {
+						try {
+							beanProcessors.computeIfAbsent(c.getAnnotation(BeanProcessor.class).value(), _ -> new ArrayList<>())
+								.add(c.asSubclass(IBeanProcessor.class).getConstructor().newInstance());
+						} catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
+							throw new RuntimeException(ex);
+						}
+						logger.debug("Registered Bean processor: {}", c);
+					} else {
+						throw new RuntimeException("Bean processor must implement IBeanProcessor: " + c);
+					}
+				});
 
-			beanProcessors.values().stream().flatMap(List::stream).forEach(InternalBeanContext::injectInto);
+			beanProcessors.values().stream().flatMap(List::stream).forEach(processor -> InternalBeanContext.injectInto(processor, connectorBeans));
 
 			lifeCycle = BeanLifeCycle.Gather;
 			BeanLifeCycleContext lifeCycleContext = new BeanLifeCycleContext(
@@ -126,7 +140,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.of(this::injectFuzzyInternal),
 				Optional.empty()
 			);
-			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, scanData);
 
 			lifeCycle = BeanLifeCycle.Inspect;
 			lifeCycleContext = new BeanLifeCycleContext(
@@ -139,7 +153,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty()
 			);
-			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, scanData);
 
 			lifeCycle = BeanLifeCycle.Validate;
 			lifeCycleContext.dependencies().orElseThrow().replaceAll((k, v) -> Collections.unmodifiableList(v));
@@ -153,7 +167,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty()
 			);
-			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, scanData);
 
 			lifeCycle = BeanLifeCycle.Construct;
 			lifeCycleContext = new BeanLifeCycleContext(
@@ -166,7 +180,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.empty()
 			);
-			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, scanData);
 
 			freeze();
 
@@ -181,7 +195,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.of(this::injectFuzzyInternal),
 				Optional.of(getBeans())
 			);
-			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, scanData);
 			currentInjection.set(null);
 
 			lifeCycle = BeanLifeCycle.Inject;
@@ -195,7 +209,7 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.of(this::injectFuzzyInternal),
 				Optional.of(getBeans())
 			);
-			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, scanData);
 			currentInjection.set(null);
 
 			lifeCycle = BeanLifeCycle.Finalize;
@@ -209,12 +223,12 @@ public final class BeanContext extends AbstractBeanContext {
 				Optional.empty(),
 				Optional.of(getBeans())
 			);
-			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, modContainer, scanData);
+			runAnnotationProcessor(beanProcessors, lifeCycle, lifeCycleContext, scanData);
 
 			lifeCycle = BeanLifeCycle.Complete;
-			currentContainerContext = new ContainerContext(modContainer, scanData);
+			cachedScanData = scanData;
 
-			LOGGER.info("Bean Context loaded in {} ms", System.currentTimeMillis() - ms);
+			logger.info("Bean Context loaded in {} ms", System.currentTimeMillis() - ms);
 		} catch (Throwable e) {
 			throwInjectionFailedException(currentInjection, e);
 		}
@@ -224,13 +238,12 @@ public final class BeanContext extends AbstractBeanContext {
 		Map<BeanLifeCycle, List<IBeanProcessor>> beanProcessors,
 		BeanLifeCycle lifeCycle,
 		BeanLifeCycleContext lifeCycleContext,
-		ModContainer modContainer,
-		ModFileScanData scanData
+		List<AnnotationScanData> scanData
 	) throws Throwable {
 		for (IBeanProcessor beanProcessor : beanProcessors.get(lifeCycle)) {
 			if (INSTANCE.lifeCycle != BeanLifeCycle.Complete || config.loggingSettings().isInjectIntoEnabled())
-				LOGGER.debug("Running processor {}", beanProcessor.getClass());
-			beanProcessor.process(lifeCycleContext, modContainer, scanData, beanAnnotationProcessorMetadata);
+				INSTANCE.logger.debug("Running processor {}", beanProcessor.getClass());
+			beanProcessor.process(lifeCycleContext, scanData, beanAnnotationProcessorMetadata);
 		}
 	}
 
@@ -248,11 +261,11 @@ public final class BeanContext extends AbstractBeanContext {
 		final long ms = System.currentTimeMillis();
 		boolean loggingEnabled = INSTANCE.config.loggingSettings().isInjectIntoEnabled();
 		if (loggingEnabled)
-			LOGGER.debug("Processing {}", object);
+			INSTANCE.logger.debug("Processing {}", object);
 		AtomicReference<Object> curInj = new AtomicReference<>();
 		try {
-			ContainerContext context = INSTANCE.currentContainerContext;
-			if (context == null) {
+			List<AnnotationScanData> scanData = INSTANCE.cachedScanData;
+			if (scanData == null) {
 				throw new IllegalStateException("BeanContext.init() must be ran first before calling BeanContext.injectInto(obj)");
 			}
 			INSTANCE.runAnnotationProcessor(
@@ -268,20 +281,26 @@ public final class BeanContext extends AbstractBeanContext {
 					Optional.of(INSTANCE::injectFuzzyInternal),
 					Optional.of(Map.of(new BeanDefinition<>(object.getClass(), null), object))
 				),
-				context.container(),
-				context.scanData()
+				scanData
 			);
 		} catch (Throwable e) {
 			INSTANCE.throwInjectionFailedException(curInj, e);
 		}
 		if (loggingEnabled)
-			LOGGER.debug("Finished processing {} in {} ms", object, System.currentTimeMillis() - ms);
+			INSTANCE.logger.debug("Finished processing {} in {} ms", object, System.currentTimeMillis() - ms);
 	}
 
 	@Override
-	protected void registerInternal(Class<?> type, @org.jetbrains.annotations.Nullable String name, Object instance) {
-		LOGGER.debug("Registering Bean {} {}", type, name == null ? "" : ("with name: " + name));
+	protected void registerInternal(Class<?> type, @Nullable String name, Object instance) {
+		logger.debug("Registering Bean {} {}", type, name == null ? "" : ("with name: " + name));
 		super.registerInternal(type, name, instance);
+	}
+
+	private void registerConnectorBean(Class<?> type, @Nullable String name, Object instance) {
+		logger.debug("Registering connector Bean {} {}", type, name == null ? "" : ("with name: " + name));
+		BeanDefinition<?> definition = new BeanDefinition<>(type, name);
+		if (connectorBeans.putIfAbsent(definition, instance) != null)
+			throw new RuntimeException("Attempted to register a duplicate connector Bean. " + definition);
 	}
 
 	@Override
@@ -312,11 +331,11 @@ public final class BeanContext extends AbstractBeanContext {
 	}
 
 	public static <T> Supplier<T> injectLazy(Class<T> type, @Nullable String name) {
-		return Suppliers.memoize(() -> INSTANCE.injectInternal(type, name));
+		return SimpleMemoize.memoize(() -> INSTANCE.injectInternal(type, name));
 	}
 
 	private static <T> Supplier<Object> injectLazyUnchecked(Class<T> type, @Nullable String name) {
-		return Suppliers.memoize(() -> INSTANCE.injectInternal(type, name));
+		return SimpleMemoize.memoize(() -> INSTANCE.injectInternal(type, name));
 	}
 
 	public record BeanLifeCycleContext(
@@ -336,13 +355,6 @@ public final class BeanContext extends AbstractBeanContext {
 	public interface ThrowingSupplier<R> {
 
 		R get() throws Throwable;
-
-	}
-
-	private record ContainerContext(
-		ModContainer container,
-		ModFileScanData scanData
-	) {
 
 	}
 

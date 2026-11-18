@@ -1,35 +1,29 @@
 package tamaized.beanification.processors.inspect;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.objectweb.asm.Type;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.DependencyInspector;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.junit.TestScanData;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoFixer.class, MockitoRunner.class})
 public class BeanAnnotationInspectBeanProcessorTests {
-
-	@Mock
-	private DistAnnotationRetriever distAnnotationRetriever;
 
 	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
@@ -42,15 +36,11 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 	@Test
 	public void processNoArgs() {
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of()));
 
 		Method target = mock(Method.class);
 
-		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
+		when(internalReflectionHelper.getDeclaredMethodsForName(eq(TestBean.class), anyString())).thenReturn(List.of(target));
 		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -63,7 +53,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		verify(target).trySetAccessible();
 
@@ -72,16 +62,14 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 	@Test
 	public void processWithArgs() {
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>()),
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(
+			TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method(I)V", Map.of()),
+			TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method(J)V", Map.of())
+		);
 
 		Method target = mock(Method.class);
 
-		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
+		when(internalReflectionHelper.getDeclaredMethodsForName(eq(TestBean.class), anyString())).thenReturn(List.of(target));
 		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -110,7 +98,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 		LinkedHashMap<BeanDefinition<?>, List<BeanDefinition<?>>> map = new LinkedHashMap<>();
 		when(context.dependencies()).thenReturn(Optional.of(map));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		verify(target, times(2)).trySetAccessible();
 
@@ -127,38 +115,32 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 	@Test
 	public void processNonStatic() {
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of()));
 
 		Method target = mock(Method.class);
 
-		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
+		when(internalReflectionHelper.getDeclaredMethodsForName(eq(TestBean.class), anyString())).thenReturn(List.of(target));
 		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		when(internalReflectionHelper.isStatic(target)).thenReturn(false);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@Bean methods must be static", exception.getMessage());
 	}
 
 	@Test
 	public void processInvalidArgs() {
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>()),
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(
+			TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method(I)V", Map.of()),
+			TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method(J)V", Map.of())
+		);
 
 		Method target = mock(Method.class);
 
-		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
+		when(internalReflectionHelper.getDeclaredMethodsForName(eq(TestBean.class), anyString())).thenReturn(List.of(target));
 		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -175,23 +157,21 @@ public class BeanAnnotationInspectBeanProcessorTests {
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@Bean method parameters must be annotated with @Autowired or @Directory", exception.getMessage());
 	}
 
 	@Test
 	public void processDuplicateArgs() {
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>()),
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(
+			TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method(I)V", Map.of()),
+			TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method(J)V", Map.of())
+		);
 
 		Method target = mock(Method.class);
 
-		when(internalReflectionHelper.getDeclaredMethodsForName(TestBean.class, "method")).thenReturn(List.of(target));
+		when(internalReflectionHelper.getDeclaredMethodsForName(eq(TestBean.class), anyString())).thenReturn(List.of(target));
 		when(target.isAnnotationPresent(Bean.class)).thenReturn(true);
 
 		when(internalReflectionHelper.isStatic(target)).thenReturn(true);
@@ -220,7 +200,7 @@ public class BeanAnnotationInspectBeanProcessorTests {
 		LinkedHashMap<BeanDefinition<?>, List<BeanDefinition<?>>> map = new LinkedHashMap<>();
 		when(context.dependencies()).thenReturn(Optional.of(map));
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("Duplicate bean detected - {Type: Ltamaized/beanification/TestBean;, Name: A}", exception.getMessage());
 	}

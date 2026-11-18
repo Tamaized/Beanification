@@ -1,34 +1,30 @@
 package tamaized.beanification.processors.gather;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.objectweb.asm.Type;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.*;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.junit.TestScanData;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoFixer.class, MockitoRunner.class})
 public class ComponentAnnotationGatherBeanProcessorTests {
-
-	@Mock
-	private DistAnnotationRetriever distAnnotationRetriever;
 
 	@Mock
 	private BeanConstructorLocater beanConstructorLocater;
@@ -39,18 +35,15 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 	@InjectMocks
 	private ComponentAnnotationGatherBeanProcessor instance;
 
+	private List<AnnotationScanData> scanData() {
+		return TestScanData.scan(TestScanData.raw(Component.class, ElementType.TYPE, TestBean.class, "TestBean", Map.of()));
+	}
+
 	@Test
 	@SuppressWarnings("unchecked")
 	public void processNoArgs() throws Throwable {
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		ModFileScanData.AnnotationData data = new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>());
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class)).thenReturn(Stream.of(
-			data
-		));
-
 		BeanConstructorLocater.BeanConstructor beanConstructor = mock(BeanConstructorLocater.BeanConstructor.class);
-		when(beanConstructorLocater.locate(data)).thenReturn(beanConstructor);
+		when(beanConstructorLocater.locate(any(AnnotationScanData.AnnotationData.class))).thenReturn(beanConstructor);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
@@ -65,7 +58,7 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 		TestBean bean = new TestBean();
 		when(ctor.newInstance()).thenReturn(bean);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData(), new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(bean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
@@ -74,15 +67,8 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void processWithArgs() throws Throwable {
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		ModFileScanData.AnnotationData data = new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>());
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class)).thenReturn(Stream.of(
-			data
-		));
-
 		BeanConstructorLocater.BeanConstructor beanConstructor = mock(BeanConstructorLocater.BeanConstructor.class);
-		when(beanConstructorLocater.locate(data)).thenReturn(beanConstructor);
+		when(beanConstructorLocater.locate(any(AnnotationScanData.AnnotationData.class))).thenReturn(beanConstructor);
 
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
@@ -103,7 +89,7 @@ public class ComponentAnnotationGatherBeanProcessorTests {
 		TestBean bean = new TestBean();
 		when(ctor.newInstance(depBean)).thenReturn(bean);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData(), new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(bean, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());

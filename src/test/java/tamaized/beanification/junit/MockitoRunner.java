@@ -4,9 +4,8 @@ package tamaized.beanification.junit;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.jspecify.annotations.Nullable;
 import org.mockito.MockitoAnnotations;
-
-import javax.annotation.Nullable;
 
 public class MockitoRunner implements BeforeEachCallback, AfterEachCallback {
 

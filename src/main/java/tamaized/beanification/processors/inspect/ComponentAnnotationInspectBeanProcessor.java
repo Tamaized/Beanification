@@ -1,15 +1,13 @@
 package tamaized.beanification.processors.inspect;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.BeanConstructorLocater;
 import tamaized.beanification.internal.DependencyInspector;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Constructor;
@@ -17,9 +15,6 @@ import java.util.*;
 
 @BeanProcessor(BeanLifeCycle.Inspect)
 public class ComponentAnnotationInspectBeanProcessor implements IBeanProcessor {
-
-	@InternalAutowired
-	private DistAnnotationRetriever distAnnotationRetriever;
 
 	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
@@ -33,13 +28,15 @@ public class ComponentAnnotationInspectBeanProcessor implements IBeanProcessor {
 	@Override
 	public void process(
 		BeanContext.BeanLifeCycleContext context,
-		ModContainer modContainer,
-		ModFileScanData scanData,
+		List<AnnotationScanData> scanData,
 		BeanAnnotationProcessorMetadata metadata
 	) throws Throwable {
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class).iterator(); it.hasNext(); ) {
-			ModFileScanData.AnnotationData data = it.next();
-			Class<?> c = Class.forName(data.clazz().getClassName());
+		for (Iterator<AnnotationScanData.AnnotationData> it = scanData.stream()
+			.flatMap(data -> data.filtered(ElementType.TYPE, Component.class))
+			.iterator(); it.hasNext();
+		) {
+			AnnotationScanData.AnnotationData data = it.next();
+			Class<?> c = Class.forName(data.member().metadata().clazz().className());
 			Component annotation = internalReflectionHelper.getAnnotation(c, Component.class);
 			String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
 

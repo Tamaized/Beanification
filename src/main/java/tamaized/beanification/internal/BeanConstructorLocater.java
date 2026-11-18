@@ -1,13 +1,11 @@
 package tamaized.beanification.internal;
 
-import net.neoforged.neoforgespi.language.ModFileScanData;
-import org.jetbrains.annotations.ApiStatus;
 import tamaized.beanification.*;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.reflect.Constructor;
 import java.util.Objects;
 
-@ApiStatus.Internal
 public class BeanConstructorLocater {
 
 	@InternalAutowired
@@ -38,8 +36,8 @@ public class BeanConstructorLocater {
 		return targetConstructor;
 	}
 
-	public BeanConstructor locate(ModFileScanData.AnnotationData data) throws ClassNotFoundException {
-		Class<?> c = Class.forName(data.clazz().getClassName());
+	public BeanConstructor locate(AnnotationScanData.AnnotationData data) throws ClassNotFoundException {
+		Class<?> c = Class.forName(data.member().metadata().clazz().className());
 		Component annotation = internalReflectionHelper.getAnnotation(c, Component.class);
 		String name = Objects.equals(Component.DEFAULT_VALUE, annotation.value()) ? null : annotation.value();
 

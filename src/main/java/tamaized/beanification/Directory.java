@@ -20,6 +20,4 @@ public @interface Directory {
 
 	Class<?> value();
 
-	String[] requiresModIdsLoaded() default {};
-
 }

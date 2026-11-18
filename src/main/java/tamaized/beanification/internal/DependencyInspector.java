@@ -1,6 +1,5 @@
 package tamaized.beanification.internal;
 
-import org.jetbrains.annotations.ApiStatus;
 import tamaized.beanification.*;
 
 import java.lang.reflect.Parameter;
@@ -8,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@ApiStatus.Internal
 public class DependencyInspector {
 
 	public final List<BeanDefinition<?>> inspect(BeanContext.BeanLifeCycleContext context, Parameter[] parameters) {

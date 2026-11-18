@@ -1,6 +1,5 @@
 package tamaized.beanification.internal;
 
-import org.apache.groovy.util.Maps;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -8,7 +7,9 @@ import tamaized.beanification.*;
 import tamaized.beanification.junit.MockitoRunner;
 
 import java.lang.reflect.Parameter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,10 +54,10 @@ public class DependencyInspectorTests {
 
 		TestBean depBean = new TestBean();
 
-		when(context.gather()).thenReturn(Optional.of(Maps.of(
-			new BeanDefinition<>(TestBean.class, "A"), () -> depBean,
-			new BeanDefinition<>(TestBean.class, "B"), () -> depBean
-		)));
+		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gather = new LinkedHashMap<>();
+		gather.put(new BeanDefinition<>(TestBean.class, "A"), () -> depBean);
+		gather.put(new BeanDefinition<>(TestBean.class, "B"), () -> depBean);
+		when(context.gather()).thenReturn(Optional.of(gather));
 
 		List<BeanDefinition<?>> result = instance.inspect(context, params);
 

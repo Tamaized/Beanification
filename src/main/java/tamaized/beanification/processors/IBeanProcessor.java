@@ -1,15 +1,15 @@
 package tamaized.beanification.processors;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.BeanContext;
+import tamaized.beanification.scan.AnnotationScanData;
+
+import java.util.List;
 
 public interface IBeanProcessor {
 
 	void process(
 		BeanContext.BeanLifeCycleContext context,
-		ModContainer modContainer,
-		ModFileScanData scanData,
+		List<AnnotationScanData> scanData,
 		BeanAnnotationProcessorMetadata metadata
 	) throws Throwable;
 

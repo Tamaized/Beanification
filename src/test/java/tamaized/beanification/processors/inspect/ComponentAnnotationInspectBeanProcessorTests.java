@@ -1,20 +1,18 @@
 package tamaized.beanification.processors.inspect;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.objectweb.asm.Type;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.BeanConstructorLocater;
 import tamaized.beanification.internal.DependencyInspector;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.junit.TestScanData;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Constructor;
@@ -23,16 +21,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoFixer.class, MockitoRunner.class})
 public class ComponentAnnotationInspectBeanProcessorTests {
-
-	@Mock
-	private DistAnnotationRetriever distAnnotationRetriever;
 
 	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
@@ -49,11 +43,7 @@ public class ComponentAnnotationInspectBeanProcessorTests {
 	@Test
 	public void processNoArgs() {
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Component.class, ElementType.TYPE, TestBean.class, "TestBean", Map.of()));
 
 		Component component = mock(Component.class);
 		when(internalReflectionHelper.getAnnotation(TestBean.class, Component.class)).thenReturn(component);
@@ -65,7 +55,7 @@ public class ComponentAnnotationInspectBeanProcessorTests {
 
 		when(ctor.getParameterCount()).thenReturn(0);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		verify(context, never()).dependencies();
 	}
@@ -73,11 +63,7 @@ public class ComponentAnnotationInspectBeanProcessorTests {
 	@Test
 	public void processWithArgs() {
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.TYPE, Component.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "TestBean", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Component.class, ElementType.TYPE, TestBean.class, "TestBean", Map.of()));
 
 		Component component = mock(Component.class);
 		when(internalReflectionHelper.getAnnotation(TestBean.class, Component.class)).thenReturn(component);
@@ -98,7 +84,7 @@ public class ComponentAnnotationInspectBeanProcessorTests {
 			new BeanDefinition<>(TestBean.class, "B")
 		));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, deps.size());
 		assertEquals(new BeanDefinition<>(TestBean.class, "A"), deps.keySet().toArray()[0]);

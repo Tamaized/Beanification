@@ -8,21 +8,11 @@ import java.lang.annotation.Target;
 /**
  * <p>
  * 	Annotated methods will be automatically invoked after bean construction has finished.<br/>
- * </p>
- * <p>
- * 	Must have no arguments or have a single IEventBus parameter for the Mod EventBus.<br/>
- * 	The parameter can be configured to be the Game EventBus type instead via {@code @PostConstruct(PostConstruct.Bus.GAME)}<br/>
- * 	If there are two IEventBus parameters then the first type will be what is defined as {@link PostConstruct#value()} and the second will be the alternative.
+ * 	Methods must be no-arg.
  * </p>
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PostConstruct {
-
-	Bus value() default Bus.MOD;
-
-	enum Bus {
-		MOD, GAME
-	}
 
 }

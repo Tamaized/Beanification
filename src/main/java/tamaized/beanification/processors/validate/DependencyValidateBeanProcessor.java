@@ -1,11 +1,10 @@
 package tamaized.beanification.processors.validate;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.util.*;
 
@@ -15,8 +14,7 @@ public class DependencyValidateBeanProcessor implements IBeanProcessor {
 	@Override
 	public void process(
 		BeanContext.BeanLifeCycleContext context,
-		ModContainer modContainer,
-		ModFileScanData scanData,
+		List<AnnotationScanData> scanData,
 		BeanAnnotationProcessorMetadata metadata
 	) throws Throwable {
 		context.dependencies().orElseThrow().keySet()

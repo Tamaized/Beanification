@@ -1,20 +1,17 @@
 package tamaized.beanification.processors.gather;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.objectweb.asm.Type;
 import tamaized.beanification.*;
-import tamaized.beanification.internal.AutowiredParameterInjector;
 import tamaized.beanification.internal.ConjoinedParameterInjector;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.junit.TestScanData;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
@@ -24,17 +21,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoFixer.class, MockitoRunner.class})
 public class BeanAnnotationGatherBeanProcessorTests {
-
-	@Mock
-	private DistAnnotationRetriever distAnnotationRetriever;
 
 	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
@@ -47,10 +39,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 	@Test
 	public void process() throws Throwable {
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of()));
 
 		Method target = mock(Method.class);
 
@@ -71,9 +60,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		ModContainer modContainer = mock(ModContainer.class);
-
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(beanInstance, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
@@ -81,10 +68,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 	@Test
 	public void processDuplicate() throws Throwable {
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of()));
 
 		Method target = mock(Method.class);
 
@@ -105,9 +89,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		ModContainer modContainer = mock(ModContainer.class);
-
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("Duplicate bean detected - {Type: Ltamaized/beanification/TestBean;, Name: null}", exception.getMessage());
 
@@ -116,10 +98,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 	@Test
 	public void processNamed() throws Throwable {
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", Map.of("value", "test"))
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of("value", "test")));
 
 		Method target = mock(Method.class);
 
@@ -140,9 +119,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		ModContainer modContainer = mock(ModContainer.class);
-
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(beanInstance, gatherMap.get(new BeanDefinition<>(TestBean.class, "test")).get());
@@ -174,10 +151,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 	@Test
 	public void processWithArgs() throws Throwable {
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of()));
 
 		Method target = mock(Method.class);
 
@@ -209,9 +183,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		when(target.getParameterAnnotations()).thenReturn(new Annotation[0][0]);
 		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class, Directory.class)).thenReturn(true);
 
-		ModContainer modContainer = mock(ModContainer.class);
-
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 		assertSame(beanInstance, gatherMap.get(new BeanDefinition<>(TestBean.class, null)).get());
@@ -219,10 +191,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 	@Test
 	public void processWithArgsMissingAutowired() throws Throwable {
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of()));
 
 		Method target = mock(Method.class);
 
@@ -254,9 +223,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		when(target.getParameterAnnotations()).thenReturn(new Annotation[0][0]);
 		when(internalReflectionHelper.allParametersHaveAnnotation(target.getParameterAnnotations(), Autowired.class, Directory.class)).thenReturn(false);
 
-		ModContainer modContainer = mock(ModContainer.class);
-
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals(1, gatherMap.size());
 
@@ -267,8 +234,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 	@Test
 	public void processEmpty() throws Throwable {
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.empty());
+		List<AnnotationScanData> scanData = TestScanData.scan();
 
 		Method target = mock(Method.class);
 
@@ -289,19 +255,14 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		ModContainer modContainer = mock(ModContainer.class);
-
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertTrue(gatherMap.isEmpty());
 	}
 
 	@Test
 	public void processNotStatic() throws Throwable {
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of()));
 
 		Method target = mock(Method.class);
 
@@ -322,9 +283,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		ModContainer modContainer = mock(ModContainer.class);
-
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertEquals("@Bean methods must be static", exception.getMessage());
 
@@ -333,10 +292,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 
 	@Test
 	public void processMissingBeanAnnotation() {
-		ModFileScanData scanData = mock(ModFileScanData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.METHOD, Bean.class)).thenReturn(Stream.of(
-			new ModFileScanData.AnnotationData(null, null, Type.getType(TestBean.class), "method", new HashMap<>())
-		));
+		List<AnnotationScanData> scanData = TestScanData.scan(TestScanData.raw(Bean.class, ElementType.METHOD, TestBean.class, "method", Map.of()));
 
 		Method target = mock(Method.class);
 
@@ -349,9 +305,7 @@ public class BeanAnnotationGatherBeanProcessorTests {
 		Map<BeanDefinition<?>, BeanContext.ThrowingSupplier<Object>> gatherMap = new HashMap<>();
 		when(context.gather()).thenReturn(Optional.of(gatherMap));
 
-		ModContainer modContainer = mock(ModContainer.class);
-
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData,new BeanAnnotationProcessorMetadata()));
 
 		assertTrue(gatherMap.isEmpty());
 	}

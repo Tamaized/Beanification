@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * <p>
- * Can be used to let the IDE know that {@link javax.annotation.Nonnull} fields are implicitly written during {@link PostConstruct}
+ * Can be used to let the IDE know that {@link org.jspecify.annotations.NonNull} fields are implicitly written during {@link PostConstruct}
  * </p>
  */
 @Target({ElementType.FIELD, ElementType.PARAMETER})

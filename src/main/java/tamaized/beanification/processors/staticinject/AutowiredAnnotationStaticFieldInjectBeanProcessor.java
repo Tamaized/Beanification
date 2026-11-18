@@ -1,27 +1,22 @@
 package tamaized.beanification.processors.staticinject;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
+import org.jspecify.annotations.Nullable;
 import tamaized.beanification.*;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.FieldLocator;
 import tamaized.beanification.internal.InternalReflectionHelper;
-import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
+import tamaized.beanification.scan.AnnotationScanData;
 
-import javax.annotation.Nullable;
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 @BeanProcessor(BeanLifeCycle.StaticInject)
 public class AutowiredAnnotationStaticFieldInjectBeanProcessor implements IBeanProcessor {
-
-	@InternalAutowired
-	private DistAnnotationRetriever distAnnotationRetriever;
 
 	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
@@ -29,21 +24,17 @@ public class AutowiredAnnotationStaticFieldInjectBeanProcessor implements IBeanP
 	@InternalAutowired
 	private FieldLocator fieldLocator;
 
-	@InternalAutowired
-	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
-
 	@Override
 	public void process(
 		BeanContext.BeanLifeCycleContext context,
-		ModContainer modContainer,
-		ModFileScanData scanData,
+		List<AnnotationScanData> scanData,
 		BeanAnnotationProcessorMetadata metadata
 	) throws Throwable {
-		for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Autowired.class)
-			.filter(requiredModIdsAnnotationDataPredicateFactory::filter)
+		for (Iterator<AnnotationScanData.AnnotationData> it = scanData.stream()
+			.flatMap(data -> data.filtered(ElementType.FIELD, Autowired.class))
 			.iterator(); it.hasNext();
 		) {
-			ModFileScanData.AnnotationData data = it.next();
+			AnnotationScanData.AnnotationData data = it.next();
 
 			Field field = fieldLocator.locate(context, data);
 			Autowired annotation = field.getAnnotation(Autowired.class);

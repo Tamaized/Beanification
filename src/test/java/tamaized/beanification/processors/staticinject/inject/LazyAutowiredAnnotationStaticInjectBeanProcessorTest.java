@@ -1,29 +1,27 @@
 package tamaized.beanification.processors.staticinject.inject;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import tamaized.beanification.*;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.FieldLocator;
 import tamaized.beanification.internal.InternalReflectionHelper;
-import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
+import tamaized.beanification.junit.TestScanData;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.staticinject.LazyAutowiredAnnotationStaticFieldInjectBeanProcessor;
+import tamaized.beanification.scan.AnnotationScanData;
+import tamaized.beanification.util.SimpleMemoize;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -33,16 +31,10 @@ import static org.mockito.Mockito.*;
 public class LazyAutowiredAnnotationStaticInjectBeanProcessorTest {
 
 	@Mock
-	private DistAnnotationRetriever distAnnotationRetriever;
-
-	@Mock
 	private InternalReflectionHelper internalReflectionHelper;
 
 	@Mock
 	private FieldLocator fieldLocator;
-
-	@Mock
-	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
 
 	@InjectMocks
 	private LazyAutowiredAnnotationStaticFieldInjectBeanProcessor instance;
@@ -55,25 +47,23 @@ public class LazyAutowiredAnnotationStaticInjectBeanProcessorTest {
 		return f;
 	}
 
+	private List<AnnotationScanData> scanData() {
+		return TestScanData.scan(TestScanData.raw(LazyAutowired.class, ElementType.FIELD, TestBean.class, "memberName", Map.of()));
+	}
+
 	@Test
 	public void process() throws Throwable {
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-
-		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, LazyAutowired.class)).thenAnswer(_ -> Stream.of(data));
-		when(requiredModIdsAnnotationDataPredicateFactory.filter(data)).thenReturn(true);
 
 		Field field = mockField();
-		when(fieldLocator.locate(context, data)).thenReturn(field);
+		when(fieldLocator.locate(eq(context), any(AnnotationScanData.AnnotationData.class))).thenReturn(field);
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(true);
 
 		TestBean dep = new TestBean();
-		when(context.lazyInjector()).thenReturn(Optional.of(_ -> Suppliers.memoize(() -> dep)));
+		when(context.lazyInjector()).thenReturn(Optional.of(_ -> SimpleMemoize.memoize(() -> dep)));
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData(), new BeanAnnotationProcessorMetadata()));
 
 		verify(field).trySetAccessible();
 		ArgumentCaptor<Supplier<TestBean>> captor = ArgumentCaptor.captor();
@@ -84,19 +74,13 @@ public class LazyAutowiredAnnotationStaticInjectBeanProcessorTest {
 	@Test
 	public void processNonStatic() throws Throwable {
 		BeanContext.BeanLifeCycleContext context = mock(BeanContext.BeanLifeCycleContext.class);
-		ModContainer modContainer = mock(ModContainer.class);
-		ModFileScanData scanData = mock(ModFileScanData.class);
-
-		ModFileScanData.AnnotationData data = mock(ModFileScanData.AnnotationData.class);
-		when(distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, LazyAutowired.class)).thenAnswer(_ -> Stream.of(data));
-		when(requiredModIdsAnnotationDataPredicateFactory.filter(data)).thenReturn(true);
 
 		Field field = mockField();
-		when(fieldLocator.locate(context, data)).thenReturn(field);
+		when(fieldLocator.locate(eq(context), any(AnnotationScanData.AnnotationData.class))).thenReturn(field);
 
 		when(internalReflectionHelper.isStatic(field)).thenReturn(false);
 
-		assertDoesNotThrow(() -> instance.process(context, modContainer, scanData, new BeanAnnotationProcessorMetadata()));
+		assertDoesNotThrow(() -> instance.process(context, scanData(), new BeanAnnotationProcessorMetadata()));
 
 		verify(context, never()).lazyInjector();
 		verify(field, never()).trySetAccessible();

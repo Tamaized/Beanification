@@ -1,7 +1,5 @@
 package tamaized.beanification;
 
-import net.neoforged.api.distmarker.Dist;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,9 +27,5 @@ import java.lang.annotation.Target;
 public @interface Autowired {
 
 	String value() default Component.DEFAULT_VALUE;
-
-	Dist[] dist() default {};
-
-	String[] requiresModIdsLoaded() default {};
 
 }

@@ -1,20 +1,16 @@
 package tamaized.beanification;
 
-import org.jetbrains.annotations.ApiStatus;
+import org.jspecify.annotations.Nullable;
 import tamaized.beanification.internal.*;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Field;
+import java.util.Map;
 
-@ApiStatus.Internal
 public class InternalBeanContext extends AbstractBeanContext {
 
 	static InternalBeanContext INSTANCE = new InternalBeanContext();
 
 	static {
-		INSTANCE.registerInternal(AdditionalModuleNamesProvider.class, null, new AdditionalModuleNamesProvider());
-		INSTANCE.registerInternal(RequiredModIdsAnnotationDataPredicateFactory.class, null, new RequiredModIdsAnnotationDataPredicateFactory());
-		INSTANCE.registerInternal(DistAnnotationRetriever.class, null, new DistAnnotationRetriever());
 		INSTANCE.registerInternal(InternalReflectionHelper.class, null, new InternalReflectionHelper());
 		INSTANCE.registerInternal(FieldLocator.class, null, new FieldLocator());
 		INSTANCE.registerInternal(BeanContextConfig.class, null, new BeanContextConfig());
@@ -41,12 +37,18 @@ public class InternalBeanContext extends AbstractBeanContext {
 	}
 
 	static void injectInto(Object target) {
+		injectInto(target, Map.of());
+	}
+
+	static void injectInto(Object target, Map<BeanDefinition<?>, Object> beans) {
 		for (Field field : target.getClass().getDeclaredFields()) {
 			if (field.isAnnotationPresent(InternalAutowired.class)) {
 				InternalAutowired annotation = field.getAnnotation(InternalAutowired.class);
+				String name = annotation.value().equals(Component.DEFAULT_VALUE) ? null : annotation.value();
 				field.trySetAccessible();
 				try {
-					field.set(target, inject(field.getType(), annotation.value().equals(Component.DEFAULT_VALUE) ? null : annotation.value()));
+					Object bean = beans.get(new BeanDefinition<>(field.getType(), name));
+					field.set(target, bean != null ? bean : inject(field.getType(), name));
 				} catch (Throwable e) {
 					throw new RuntimeException("Internal Bean Injection failed", e);
 				}

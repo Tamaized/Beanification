@@ -1,10 +1,9 @@
 package tamaized.beanification.internal;
 
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Type;
+import org.jspecify.annotations.Nullable;
 import tamaized.beanification.Autowired;
 import tamaized.beanification.Directory;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -13,11 +12,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-@ApiStatus.Internal
 public class InternalReflectionHelper {
 
-	public boolean classOrSuperEquals(Type clazz, Class<?> c) {
-		return clazz.equals(Type.getType(c)) || (c.getSuperclass() instanceof Class<?> sup && classOrSuperEquals(clazz, sup));
+	public boolean classOrSuperEquals(AnnotationScanData.TypeData clazz, Class<?> c) {
+		return clazz.className().equals(c.getName()) || (c.getSuperclass() instanceof Class<?> sup && classOrSuperEquals(clazz, sup));
 	}
 
 	public List<Field> getAllAutowiredFieldsIncludingSuper(Class<?> c, String name, String value) {
@@ -87,16 +85,12 @@ public class InternalReflectionHelper {
 		return raw.split("\\(")[0];
 	}
 
-	public Method getDeclaredMethod(Class<?> clazz, String name, @Nullable Class<?>... args) throws NoSuchMethodException {
+	public Method getDeclaredMethod(Class<?> clazz, String name, Class<?> @Nullable ... args) throws NoSuchMethodException {
 		return clazz.getDeclaredMethod(trimMethodName(name), args);
 	}
 
 	public List<Method> getDeclaredMethodsForName(Class<?> clazz, String name) {
 		return Arrays.stream(clazz.getDeclaredMethods()).filter(m -> m.getName().equals(trimMethodName(name))).toList();
-	}
-
-	public Type getType(Class<?> c) {
-		return Type.getType(c);
 	}
 
 	public Constructor<?>[] getConstructors(Class<?> c) {

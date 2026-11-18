@@ -1,6 +1,5 @@
 package tamaized.beanification.internal;
 
-import net.neoforged.api.distmarker.Dist;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -110,16 +109,6 @@ public class InternalReflectionHelperTests {
 			public String value() {
 				return "";
 			}
-
-			@Override
-			public Dist[] dist() {
-				return new Dist[0];
-			}
-
-			@Override
-			public String[] requiresModIdsLoaded() {
-				return new String[0];
-			}
 		};
 	}
 
@@ -135,11 +124,6 @@ public class InternalReflectionHelperTests {
 			public String value() {
 				return "";
 			}
-
-			@Override
-			public Dist[] dist() {
-				return new Dist[0];
-			}
 		};
 	}
 
@@ -154,11 +138,6 @@ public class InternalReflectionHelperTests {
 			@Override
 			public Class<?> value() {
 				return TestBean.class;
-			}
-
-			@Override
-			public String[] requiresModIdsLoaded() {
-				return new String[0];
 			}
 
 		};

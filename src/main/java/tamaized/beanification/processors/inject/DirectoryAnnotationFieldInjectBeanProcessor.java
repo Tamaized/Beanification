@@ -1,15 +1,12 @@
 package tamaized.beanification.processors.inject;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforgespi.language.ModFileScanData;
 import tamaized.beanification.*;
-import tamaized.beanification.internal.DistAnnotationRetriever;
 import tamaized.beanification.internal.InternalReflectionHelper;
-import tamaized.beanification.internal.RequiredModIdsAnnotationDataPredicateFactory;
 import tamaized.beanification.processors.BeanAnnotationProcessorClassMetadata;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.BeanProcessor;
 import tamaized.beanification.processors.IBeanProcessor;
+import tamaized.beanification.scan.AnnotationScanData;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
@@ -19,19 +16,12 @@ import java.util.*;
 public class DirectoryAnnotationFieldInjectBeanProcessor implements IBeanProcessor {
 
 	@InternalAutowired
-	private DistAnnotationRetriever distAnnotationRetriever;
-
-	@InternalAutowired
 	private InternalReflectionHelper internalReflectionHelper;
-
-	@InternalAutowired
-	private RequiredModIdsAnnotationDataPredicateFactory requiredModIdsAnnotationDataPredicateFactory;
 
 	@Override
 	public void process(
 		BeanContext.BeanLifeCycleContext context,
-		ModContainer modContainer,
-		ModFileScanData scanData,
+		List<AnnotationScanData> scanData,
 		BeanAnnotationProcessorMetadata metadata
 	) throws Throwable {
 		for (Map.Entry<BeanDefinition<?>, Object> entry : context.beansToProcess().orElseThrow().entrySet()) {
@@ -61,13 +51,13 @@ public class DirectoryAnnotationFieldInjectBeanProcessor implements IBeanProcess
 			if (foundEntry)
 				continue;
 
-			for (Iterator<ModFileScanData.AnnotationData> it = distAnnotationRetriever.retrieve(scanData, ElementType.FIELD, Directory.class)
-				.filter(requiredModIdsAnnotationDataPredicateFactory::filter)
-				.filter(a -> internalReflectionHelper.classOrSuperEquals(a.clazz(), bean.getClass()))
+			for (Iterator<AnnotationScanData.AnnotationData> it = scanData.stream()
+				.flatMap(data -> data.filtered(ElementType.FIELD, Directory.class))
+				.filter(a -> internalReflectionHelper.classOrSuperEquals(a.member().metadata().clazz(), bean.getClass()))
 				.iterator(); it.hasNext();
 			) {
-				ModFileScanData.AnnotationData data = it.next();
-				for (Field field : internalReflectionHelper.getAllDirectoryFieldsIncludingSuper(bean.getClass(), data.memberName())) {
+				AnnotationScanData.AnnotationData data = it.next();
+				for (Field field : internalReflectionHelper.getAllDirectoryFieldsIncludingSuper(bean.getClass(), data.member().metadata().memberName())) {
 					context.currentInjection().orElseThrow().set(field);
 					if (internalReflectionHelper.isStatic(field)) {
 						throw new IllegalStateException("@Directory fields must be non-static inside Beans");

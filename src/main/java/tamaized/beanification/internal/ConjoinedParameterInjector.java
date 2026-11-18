@@ -1,12 +1,10 @@
 package tamaized.beanification.internal;
 
-import org.jetbrains.annotations.ApiStatus;
 import tamaized.beanification.*;
 
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
 
-@ApiStatus.Internal
 public class ConjoinedParameterInjector {
 
 	@InternalAutowired

@@ -4,13 +4,14 @@ import net.neoforged.fml.common.Mod;
 import tamaized.beanification.Autowired;
 import tamaized.beanification.BeanContext;
 import tamaized.beanification.Component;
+import tamaized.beanification.connector.fml.FMLBeanContextConnector;
 
 @Mod("beantest")
 public class ModTest {
 
 	static {
 		BeanContext.configure().loggingSettings().enableInjectInto();
-		BeanContext.init("beantest");
+		FMLBeanContextConnector.init("beantest");
 	}
 
 	@Component

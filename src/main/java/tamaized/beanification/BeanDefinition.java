@@ -1,6 +1,7 @@
 package tamaized.beanification;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import java.util.Objects;
 
 public record BeanDefinition<T>(Class<T> type, @Nullable String name) {
