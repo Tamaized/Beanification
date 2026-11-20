@@ -4,7 +4,8 @@ import java.lang.annotation.*;
 
 /**
  * <p>
- * <b>Must be enabled with the Gradle plugin, see the README for more information.</b>
+ * <b>Must be enabled with a Gradle plugin, it is the job of a connector to build such a plugin.</b><br/>
+ * This annotation exists here as a means to reduce duplicate declarations between connectors.
  * </p>
  * <p>
  * Annotated classes will have all of their constructors injected with {@link BeanContext#injectInto(Object)}<br/>
