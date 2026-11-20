@@ -5,7 +5,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import tamaized.beanification.*;
-import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 
@@ -18,7 +17,7 @@ import java.util.function.BiConsumer;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoFixer.class, MockitoRunner.class})
+@ExtendWith({MockitoRunner.class})
 public class ConstructBeanProcessorTests {
 
 	@InjectMocks

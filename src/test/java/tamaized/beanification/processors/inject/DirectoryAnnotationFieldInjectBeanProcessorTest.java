@@ -8,7 +8,6 @@ import tamaized.beanification.*;
 import tamaized.beanification.directory.DirectoryOtherTestBean;
 import tamaized.beanification.directory.DirectoryTestBean;
 import tamaized.beanification.internal.InternalReflectionHelper;
-import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.junit.TestScanData;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
@@ -22,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoFixer.class, MockitoRunner.class})
+@ExtendWith({MockitoRunner.class})
 public class DirectoryAnnotationFieldInjectBeanProcessorTest {
 
 	@Mock

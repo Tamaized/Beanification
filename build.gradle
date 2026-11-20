@@ -1,17 +1,9 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import net.neoforged.moddevgradle.dsl.ModModel
-
 plugins {
-	id 'java-gradle-plugin'
-	id 'groovy'
 	id 'java-library'
 	id 'eclipse'
 	id 'idea'
 	id 'maven-publish'
-	// Version List: https://projects.neoforged.net/neoforged/ModDevGradle
-	id 'net.neoforged.moddev' version "${mdg_version}"
 	id "com.dorongold.task-tree" version "4.0.0"
-	id 'com.gradleup.shadow' version '9.4.1'
 }
 
 def secrets = new Properties()
@@ -38,7 +30,7 @@ idea {
 	}
 }
 
-version = "${project.mod_major_version}." + (hasProperty("CIVersion") ? CIVersion : mod_version)
+version = "${project.major_version}." + (hasProperty("CIVersion") ? CIVersion : version)
 group = group_name
 
 java {
@@ -50,114 +42,21 @@ java {
 compileJava.options.compilerArgs << "-Xlint:all,-classfile,-processing,-deprecation,-this-escape" << "-Werror"
 
 base {
-	archivesName = "${project.mod_id}"
-}
-
-sourceSets {
-	gradle {
-
-	}
-
-	main {
-		resources {
-			srcDir 'src/generated/resources'
-		}
-	}
-
-	integrationTest {
-		compileClasspath += main.output
-		runtimeClasspath += main.output
-	}
-
-}
-
-shadowJar {
-	enabled = false
-}
-
-configurations {
-	shade
-	integrationTestImplementation.extendsFrom implementation
-}
-
-neoForge {
-	version = project.neo_version
-
-	validateAccessTransformers = true
-
-	addModdingDependenciesTo sourceSets.integrationTest
-
-	mods {
-		create("${this.project.mod_id}") { ModModel model ->
-			model.sourceSet this.sourceSets.main
-		}
-		create("${this.project.mod_id}-integration-test") { ModModel model ->
-			model.sourceSet this.sourceSets.integrationTest
-		}
-	}
-
-	def mainMod = mods."${this.project.mod_id}"
-	def integrationTestMod = mods."${this.project.mod_id}-integration-test"
-
-	unitTest {
-		enable()
-		testedMod = mainMod
-		loadedMods = [mainMod]
-	}
-
-	runs {
-		configureEach {
-			gameDirectory = project.file('run')
-			loadedMods = [mainMod]
-			systemProperty 'forge.logging.console.level', 'debug'
-			logLevel = org.slf4j.event.Level.DEBUG
-		}
-
-		create('client') {
-			client()
-			loadedMods = [mainMod, integrationTestMod]
-			systemProperty 'forge.enabledGameTestNamespaces', this.project.mod_id
-			programArguments.addAll '--username', secrets.getProperty("username") ?: 'Dev', secrets.getProperty("uuid") ? '--uuid' : '', secrets.getProperty("uuid") ?: ''
-		}
-
-		create('server') {
-			server()
-			systemProperty 'forge.enabledGameTestNamespaces', this.project.mod_id
-			programArgument '--nogui'
-		}
-
-		create('data') {
-			clientData()
-			gameDirectory = project.file('run-data')
-			programArguments.addAll '--mod', this.project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-		}
-	}
+	archivesName = "${project.group_id}"
 }
 
 repositories {
-	gradlePluginPortal()
-	mavenLocal()
-	maven {
-		name 'Jared\'s Maven' // JEI
-		url 'https://maven.blamejared.com/'
-	}
+	mavenCentral()
 }
 
 dependencies {
-	// implementation "mezz.jei:jei-${project.minecraft_version}-neoforge:${project.jei_version}"
+	compileOnly "org.jspecify:jspecify:${project.jspecify_version}"
 
-	testImplementation group: 'net.neoforged', name: 'testframework', version: project.neo_version
+	testCompileOnly "org.jspecify:jspecify:${project.jspecify_version}"
 	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '6.0.1'
 	testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '6.0.1'
 	testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-launcher', version: '6.0.1'
 	testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '5.21.0'
-
-	gradleImplementation(gradleApi())
-	gradleImplementation(localGroovy())
-	gradleImplementation "net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:${project.mdg_version}"
-	def asmDep = "org.ow2.asm:asm-tree:${project.asm_version}"
-	gradleImplementation asmDep
-	shade asmDep
 }
 
 test {
@@ -175,11 +74,10 @@ test {
 }
 
 jar {
-	exclude 'META-INF/neoforge.mods.toml'
 	manifest {
 		attributes([
-			'FMLModType'              : 'GAMELIBRARY',
-			'Specification-Title'     : mod_id,
+			'Automatic-Module-Name'   : group_id,
+			'Specification-Title'     : group_id,
 			'Specification-Vendor'    : "Tamaized",
 			'Specification-Version'   : "1",
 			'Implementation-Title'    : this.project.name,
@@ -201,10 +99,9 @@ publishing {
 				artifact this.project.sourceJar
 				artifact this.project.testJar
 				artifact this.project.testSourceJar
-				artifact this.project.gradlePluginJar
 			}
 			groupId 'tamaized'
-			artifactId this.project.mod_id
+			artifactId this.project.group_id
 		}
 	}
 	repositories {
@@ -234,18 +131,6 @@ tasks.register('testSourceJar', Jar) {
 	dependsOn 'classes'
 	from sourceSets.test.allSource
 	archiveClassifier = 'test-sources'
-}
-
-tasks.register('gradlePluginJar', ShadowJar) {
-	archiveClassifier.set('gradle')
-	from sourceSets.gradle.output
-	configurations = [this.project.configurations.shade]
-	relocate 'org.objectweb.asm', 'tamaized.beanification.objectweb.asm'
-	manifest {
-		attributes([
-			'Premain-Class': 'tamaized.beanification.gradle.asm.ConfigurableHotswapAgent'
-		])
-	}
 }
 
 tasks.withType(JavaCompile).configureEach {

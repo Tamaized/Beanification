@@ -7,7 +7,6 @@ import tamaized.beanification.BeanContext;
 import tamaized.beanification.BeanDefinition;
 import tamaized.beanification.CircularDependencyException;
 import tamaized.beanification.TestBean;
-import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
 import tamaized.beanification.processors.construct.ConstructBeanProcessor;
@@ -21,7 +20,7 @@ import java.util.function.BiConsumer;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoFixer.class, MockitoRunner.class})
+@ExtendWith({MockitoRunner.class})
 public class DependencyValidateBeanProcessorTests {
 
 	@InjectMocks

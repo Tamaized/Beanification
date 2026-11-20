@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import tamaized.beanification.*;
 import tamaized.beanification.internal.FieldLocator;
 import tamaized.beanification.internal.InternalReflectionHelper;
-import tamaized.beanification.junit.MockitoFixer;
 import tamaized.beanification.junit.MockitoRunner;
 import tamaized.beanification.junit.TestScanData;
 import tamaized.beanification.processors.BeanAnnotationProcessorMetadata;
@@ -27,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoFixer.class, MockitoRunner.class})
+@ExtendWith({MockitoRunner.class})
 public class LazyAutowiredAnnotationStaticInjectBeanProcessorTest {
 
 	@Mock
